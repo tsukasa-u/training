@@ -10,7 +10,7 @@ end
 function g(t::Float64, N::Int64, a_0::Float64, a::Vector{Float64})::Float64
     tmp::Float64 = 0.0
     for i in N:1
-        tmp += tmp*t + a[i]
+        tmp = tmp*t + a[i]
     end
     return tmp*t + a_0
 end

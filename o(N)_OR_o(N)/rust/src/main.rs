@@ -44,7 +44,6 @@ fn g(_t: f32, n: i32, _a: &Vec<f32>) -> (f32, u128) {
 
 #[allow(non_upper_case_globals)]
 fn main() {
-    println!("Hello, world!");
     const N_MAX:usize = 100000000;
     let mut rng = thread_rng();
     let a: Vec<f32> = vec![rng.gen(); N_MAX + 1];
