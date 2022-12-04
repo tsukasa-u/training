@@ -92,7 +92,7 @@ impl std::ops::Mul<f32> for Vec3 {
 
 fn update_orbit(_h: f32, obj:&Vec<Phymqp>) {
     for iter in obj {
-        
+
     }
 }
 
@@ -114,7 +114,7 @@ fn Vq(satelite:&Phymqp, obj:&Vec<Phymqp>) -> Vec3{
     return ret;
 }
 
-fn sympletic4(h:f32, end:f32, mut satelite:&Phymqp, obj:&Vec<Phymqp>) -> Vec<(f32, Vec<f32>, Vec<f32>)> {
+fn sympletic4(h:f32, end:f32, satelite:&mut Phymqp, obj:&Vec<Phymqp>) -> (f32, Vec3, Vec3) {
 
     let c: &Vec<f32> = INSTANCE_C.get().unwrap();
     let d: &Vec<f32> = INSTANCE_C.get().unwrap();
@@ -124,7 +124,7 @@ fn sympletic4(h:f32, end:f32, mut satelite:&Phymqp, obj:&Vec<Phymqp>) -> Vec<(f3
         (*satelite).v -= (*c)[iter]*Vq(&satelite, &obj)*h;
     }
 
-    return vec![satelite];
+    return (1.0,satelite.r,satelite.v);
 }
 
 fn main() {
