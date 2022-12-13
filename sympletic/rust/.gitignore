@@ -3,3 +3,6 @@ spice_lessons_c_unix.zip
 spice_lessons_c_unix
 cspice
 cspice.tar
+importCSpice.csh
+/spk_data
+/plot/.ipynb_checkpoints
