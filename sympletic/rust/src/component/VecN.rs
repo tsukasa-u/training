@@ -1,4 +1,5 @@
 pub mod mod_vec_n {
+
     #[derive(Clone)]
     #[derive(Default)]
     pub struct VecN<T>(Vec<T>);
