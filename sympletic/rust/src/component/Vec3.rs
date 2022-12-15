@@ -1,12 +1,18 @@
 pub mod mod_vec_3 {
     #[derive(Copy, Clone)]
     #[derive(Default)]
+    #[derive(Debug)]
     pub struct Vec3<T>(pub [T; 3]) ;
 
     impl<T> Vec3<T> {
+        pub fn new() -> Self where T: Default + Copy {
+            return Self([Default::default(); 3]);
+        }
+
         pub fn as_mut_ptr(&mut self) -> &mut [T; 3] {
             return &mut (*self).0;
         }
+        #[allow(dead_code)]
         pub fn get(&self) -> &[T; 3] {
             return & (*self).0;
         }
@@ -19,20 +25,23 @@ pub mod mod_vec_3 {
 
     impl Vec3<f64> {
         pub fn distance2(&self) -> f64 {
-            return (*self).0[0].powf(2.0) + (*self).0[1].powf(2.0) + (*self).0[2].powf(2.0);
+            return (*self)[0].powf(2.0) + (*self)[1].powf(2.0) + (*self)[2].powf(2.0);
         }
     }
 
-    // impl<T> Copy for Vec3<T> where T: Copy {
-       
-    // }
+    
+    impl<T> std::ops::Deref for Vec3<T> {
+        type Target = [T; 3];
+        fn deref(&self) -> &Self::Target {
+            return & self.0
+        }
+    }
 
-    // impl<T> Clone for Vec3<T> where T: Clone {
-    //     fn clone(&self) -> Self {
-    //         return *self;
-    //         // Vec3([(&self).0[0].clone(), (&self).0[0].clone(), (&self).0[0].clone()])
-    //     }
-    // }
+    impl<T> std::ops::DerefMut for Vec3<T> {
+        fn deref_mut(&mut self) -> &mut Self::Target {
+            &mut self.0
+        }
+    }
     
 
     impl<T> std::ops::Add<Vec3<T>> for Vec3<T> where T: std::ops::Add<Output = T> + Copy {
@@ -41,9 +50,9 @@ pub mod mod_vec_3 {
         fn add(self, rhs: Vec3<T>) -> Vec3<T> {
             return Self(
                 [
-                    self.0[0] + rhs.0[0],
-                    self.0[1] + rhs.0[1],
-                    self.0[2] + rhs.0[2]
+                    self[0] + rhs[0],
+                    self[1] + rhs[1],
+                    self[2] + rhs[2]
                 ]
             );
         }
@@ -53,9 +62,9 @@ pub mod mod_vec_3 {
         fn add_assign(&mut self, rhs: Vec3<T>) {
             *self =  Self(
                 [
-                    self.0[0] + rhs.0[0],
-                    self.0[1] + rhs.0[1],
-                    self.0[2] + rhs.0[2]
+                    self[0] + rhs[0],
+                    self[1] + rhs[1],
+                    self[2] + rhs[2]
                 ]
             );
         }
@@ -67,9 +76,9 @@ pub mod mod_vec_3 {
         fn sub(self, rhs: Vec3<T>) -> Vec3<T> {
             return Self(
                 [
-                    self.0[0] - rhs.0[0],
-                    self.0[1] - rhs.0[1],
-                    self.0[2] - rhs.0[2]
+                    self[0] - rhs[0],
+                    self[1] - rhs[1],
+                    self[2] - rhs[2]
                 ]
             );
         }
@@ -79,9 +88,9 @@ pub mod mod_vec_3 {
         fn sub_assign(&mut self, rhs: Vec3<T>) {
             *self =  Self(
                 [
-                    self.0[0] - rhs.0[0],
-                    self.0[1] - rhs.0[1],
-                    self.0[2] - rhs.0[2]
+                    self[0] - rhs[0],
+                    self[1] - rhs[1],
+                    self[2] - rhs[2]
                 ]
             );
         }
@@ -93,9 +102,9 @@ pub mod mod_vec_3 {
         fn neg(self) -> Self::Output {
             return Self(
                 [
-                    -self.0[0],
-                    -self.0[1],
-                    -self.0[2]
+                    -self[0],
+                    -self[1],
+                    -self[2]
                 ]
             );
         }
@@ -107,9 +116,9 @@ pub mod mod_vec_3 {
     //     fn mul(self, rhs: Vec3<T>) -> Vec3<T> {
     //         return Self(
     //             [
-    //                 self * rhs.0[0],
-    //                 self * rhs.0[1],
-    //                 self * rhs.0[2]
+    //                 self * rhs[0],
+    //                 self * rhs[1],
+    //                 self * rhs[2]
     //             ]
     //         );
     //     }
@@ -121,9 +130,9 @@ pub mod mod_vec_3 {
         fn mul(self, rhs: T) -> Vec3<T> {
             return Self(
                 [
-                    self.0[0] * rhs,
-                    self.0[1] * rhs,
-                    self.0[2] * rhs
+                    self[0] * rhs,
+                    self[1] * rhs,
+                    self[2] * rhs
                 ]
             );
         }
@@ -133,9 +142,9 @@ pub mod mod_vec_3 {
         fn mul_assign(&mut self, rhs: T) {
             *self = Self(
                 [
-                    self.0[0] * rhs,
-                    self.0[1] * rhs,
-                    self.0[2] * rhs
+                    self[0] * rhs,
+                    self[1] * rhs,
+                    self[2] * rhs
                 ]
             );
         }
@@ -147,11 +156,26 @@ pub mod mod_vec_3 {
         fn div(self, rhs: T) -> Vec3<T> {
             return Self(
                 [
-                    self.0[0] / rhs,
-                    self.0[1] / rhs,
-                    self.0[2] / rhs
+                    self[0] / rhs,
+                    self[1] / rhs,
+                    self[2] / rhs
                 ]
             );
+        }
+    }
+    
+    impl<T> std::ops::Index<usize> for Vec3<T> {
+        type Output = T;
+    
+        fn index(&self, _index: usize) -> &Self::Output {
+            return &((*self).0[_index]);
+        }
+    }
+
+    impl<T> std::ops::IndexMut<usize> for Vec3<T> {
+    
+        fn index_mut(&mut self, _index: usize) -> &mut Self::Output {
+            return &mut ((*self).0[_index]);
         }
     }
 }
