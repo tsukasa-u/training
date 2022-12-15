@@ -6,5 +6,7 @@ pub mod Vec3;
 pub mod VecN;
 #[allow(non_snake_case)]
 pub mod VecL;
+#[allow(non_snake_case)]
+pub mod PhyQty;
 pub mod moons;
 pub mod rk4_fehlberg;
