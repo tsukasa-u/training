@@ -72,10 +72,11 @@ fn Vq(satelite:&PhyQty::mxvr, obj:&Vec<PhyQty::mxvr>) -> Vec3::Vec3<f64> {
     let mut ret:Vec3::Vec3<f64> = Vec3::Vec3([0.0, 0.0, 0.0]);
 
     for iter in obj {
-        println!("{:?}", iter.get_x().distance2());
-        ret += iter.get_x()*(iter.get_mass()/iter.get_x().distance2());
+        let x_sub: Vec3::Vec3<f64> = satelite.get_x() - iter.get_x();
+        // println!("{:?}", x_sub.distance2());
+        ret += x_sub*(iter.get_mass()/x_sub.distance2());
     }
-    // println!("{:?}", ret);
+    println!("{:?}", ret);
     return ret*PHY_G*satelite.get_mass();
 }
 
