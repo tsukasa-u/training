@@ -61,6 +61,8 @@ pub fn rk4_fehlberg(
     *_t += _h
 }
 
+#[allow(dead_code)]
+#[allow(non_snake_case)]
 // [satelite_x, satelite_v, moon_a, sun_x]
 fn funcVecL(_t: f64, _x:&VecL<Vec3<f64>, N>) -> VecL<Vec3<f64>, N> {
     return VecL::new();
