@@ -16,7 +16,7 @@ static INSTANCE_C: once_cell::sync::OnceCell<Vec<f64>> =  once_cell::sync::OnceC
 static INSTANCE_D: once_cell::sync::OnceCell<Vec<f64>> =  once_cell::sync::OnceCell::new();
 
 #[allow(dead_code)]
-const PHY_G:f64 = 9.8;
+const PHY_G:f64 = 6.67430E-11;
 
 
 #[allow(dead_code)]
@@ -73,10 +73,10 @@ fn Vq(satelite:&PhyQty::mxvr, obj:&Vec<PhyQty::mxvr>) -> Vec3::Vec3<f64> {
 
     for iter in obj {
         let x_sub: Vec3::Vec3<f64> = satelite.get_x() - iter.get_x();
-        // println!("{:?}", x_sub.distance2());
+        println!("{:?}", x_sub/x_sub.distance2());
         ret += x_sub*(iter.get_mass()/x_sub.distance2());
     }
-    println!("{:?}", ret);
+    // println!("{:?}", ret);
     return ret*PHY_G*satelite.get_mass();
 }
 
