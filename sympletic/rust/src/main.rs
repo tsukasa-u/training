@@ -63,7 +63,7 @@ fn update_orbit(_t: f64, _obj:&mut Vec<PhyQty::mxvr>) {
 #[allow(non_snake_case)]
 fn Tp(satelite:&PhyQty::mxvr) -> Vec3::Vec3<f64> {
     // println!("{:?}", (*satelite).get_mass());
-    return (*satelite).get_v()*(*satelite).get_mass();
+    return (*satelite).get_v();
 }
 
 #[allow(dead_code)]
@@ -72,12 +72,12 @@ fn Vq(satelite:&PhyQty::mxvr, obj:&Vec<PhyQty::mxvr>) -> Vec3::Vec3<f64> {
     let mut ret:Vec3::Vec3<f64> = Vec3::Vec3([0.0, 0.0, 0.0]);
 
     for iter in obj {
-        let x_sub: Vec3::Vec3<f64> = satelite.get_x() - iter.get_x();
-        println!("{:?}", x_sub/x_sub.distance2());
-        ret += x_sub*(iter.get_mass()/x_sub.distance2());
+        let x_sub: Vec3::Vec3<f64> = (*satelite).get_x() - (*iter).get_x();
+        // println!("{} {:?}", iter.get_name(), x_sub/x_sub.distance2());
+        ret += x_sub*((*iter).get_mass()/x_sub.distance3());
     }
-    // println!("{:?}", ret);
-    return ret*PHY_G*satelite.get_mass();
+    // println!("{:?}", ret*PHY_G*satelite.get_mass());
+    return ret*PHY_G;
 }
 
 #[allow(dead_code)]
@@ -97,8 +97,8 @@ fn sympletic4(h:f64, start:f64, end:f64, satelite:&mut PhyQty::mxvr, obj:&mut Ve
     while _t < end {
         update_orbit(_t, obj);
         for iter in 0..4 {
-            satelite.x = satelite.get_x() + Tp(&satelite)*(*c)[iter]*h;
-            satelite.v = satelite.get_v() - Vq(&satelite, &obj)*(*d)[iter]*h;
+            satelite.x += Tp(&satelite)*(*c)[iter]*h;
+            satelite.v -= Vq(&satelite, &obj)*(*d)[iter]*h;
             // println!("{:?}", satelite.get_x());
         }
         record_orbit(_t , 60.0,satelite, obj, recoder);
@@ -145,7 +145,7 @@ fn main() {
     let mut satelite: PhyQty::mxvr = PhyQty::mxvr {
         name: String::from("SATELITE"),
         m: 50.0,
-        x: Vec3::Vec3([7000.0*1000.0, 0.0, 0.0]),
+        x: Vec3::Vec3([6500.0*1000.0, 0.0, 0.0]),
         v: Vec3::Vec3([0.0, 3000.0, 0.0]),
         r:0.25
     };
@@ -157,7 +157,7 @@ fn main() {
 
     cspice::call_furnsh_c();
 
-    sympletic4(1.0, 0.0, 10.0, &mut satelite, &mut objects, &mut recorder);
+    sympletic4(0.1, 0.0, 1000.0, &mut satelite, &mut objects, &mut recorder);
 
 
     if let Err(err) = csv_writer(&recorder) {
