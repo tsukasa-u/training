@@ -24,12 +24,15 @@ pub mod mod_vec_3 {
     }
 
     impl Vec3<f64> {
+        #[allow(dead_code)]
         pub fn distance(&self) -> f64 {
             return ((*self)[0].powf(2.0) + (*self)[1].powf(2.0) + (*self)[2].powf(2.0)).powf(0.5);
         }
+        #[allow(dead_code)]
         pub fn distance2(&self) -> f64 {
             return (*self)[0].powf(2.0) + (*self)[1].powf(2.0) + (*self)[2].powf(2.0);
         }
+        #[allow(dead_code)]
         pub fn distance3(&self) -> f64 {
             return ((*self)[0].powf(2.0) + (*self)[1].powf(2.0) + (*self)[2].powf(2.0)).powf(1.5);
         }
