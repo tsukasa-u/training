@@ -19,3 +19,8 @@ https://www1.kaiho.mlit.go.jp/GIJUTSUKOKUSAI/KENKYU/report/rhr36/rhr36-02.pdf
 https://qiita.com/ina111/items/60f75d90e5376d34a0ef
 
 https://ja.stackoverflow.com/questions/34639/rust-rcfoo-%E3%81%AB%E3%83%88%E3%83%AC%E3%82%A4%E3%83%88-stdopadd-%E3%82%92%E5%AE%9F%E8%A3%85%E3%81%95%E3%81%9B%E3%81%9F%E3%81%84
+
+http ://github.com/stevengj/nlopt
+
+http://www.cas.cmc.osaka-u.ac.jp/~paoon/Lectures/2021-8Semester-NA-basic/a3-linear-multistep-method/
+https://tomioka.dk/talks/nectalk11.pdf
