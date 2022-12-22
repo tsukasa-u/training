@@ -7,19 +7,22 @@ pub mod interval {
     pub struct Interval<T>(T, T);
 
     impl<T> Interval<T> {
+        #[allow(dead_code)]
         pub fn new() -> Self where T: Default + Copy {
             return Self(Default::default(), Default::default());
         }
     }
 
     impl Interval<f32> {
-        pub fn T(self) -> Self {
+        #[allow(dead_code)]
+        pub fn reverse(self) -> Self {
             return Self(1.0/self.0, 1.0/self.1);
         }
     }
     
     impl Interval<f64> {
-        pub fn T(self) -> Self {
+        #[allow(dead_code)]
+        pub fn reverse(self) -> Self {
             return Self(1.0/self.0, 1.0/self.1);
         }
     }
