@@ -18,6 +18,7 @@ static INSTANCE_D: once_cell::sync::OnceCell<Vec<f64>> =  once_cell::sync::OnceC
 #[allow(dead_code)]
 const PHY_G:f64 = 6.67430E-11;
 
+mod tester;
 
 #[allow(dead_code)]
 fn record_orbit(_t: f64, h: f64, interval:f64, satelite: &mut PhyQty::mxvr, _obj: &mut Vec<PhyQty::mxvr>, recoder: &mut Vec<[f32; 10]>) {
