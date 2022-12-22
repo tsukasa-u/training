@@ -2,7 +2,7 @@
 mod component;
 
 #[allow(unused_imports)]
-use component::{Vec3, VecL, Julian, PhyQty};
+use component::{VecL::Vec3, VecL::VecL, Julian, PhyQty};
 
 #[allow(non_snake_case)]
 mod Moon;

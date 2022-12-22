@@ -1,5 +1,5 @@
 
-use crate::component::{Vec3::Vec3, VecL::VecL};
+use crate::component::{VecL::Vec3::Vec3, VecL::VecL::VecL};
 
 const N: usize =  1 + 1 + 2 ;   // satelite (x + v) + moon x + sun x
 
