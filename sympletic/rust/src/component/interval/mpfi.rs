@@ -112,124 +112,124 @@ extern {
     pub fn mpfi_div         (a: mpfi_ptr, b: mpfi_srcptr, c: mpfi_srcptr)   -> c_int;
 
     /* arithmetic operations between an interval operand and a double prec. floating-point */
-    pub fn mpfi_add_d      (a: mpfi_ptr, b: mpfi_srcptr, c: c_double    )   -> c_int;
-    pub fn mpfi_sub_d      (a: mpfi_ptr, b: mpfi_srcptr, c: c_double    )   -> c_int;
-    pub fn mpfi_d_sub      (a: mpfi_ptr, b: c_double   , c: mpfi_srcptr )   -> c_int;
-    pub fn mpfi_mul_d      (a: mpfi_ptr, b: mpfi_srcptr, c: c_double    )   -> c_int;
-    pub fn mpfi_div_d      (a: mpfi_ptr, b: mpfi_srcptr, c: c_double    )   -> c_int;
-    pub fn mpfi_d_div      (a: mpfi_ptr, b: c_double   , c: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_add_d       (a: mpfi_ptr, b: mpfi_srcptr, c: c_double    )   -> c_int;
+    pub fn mpfi_sub_d       (a: mpfi_ptr, b: mpfi_srcptr, c: c_double    )   -> c_int;
+    pub fn mpfi_d_sub       (a: mpfi_ptr, b: c_double   , c: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_mul_d       (a: mpfi_ptr, b: mpfi_srcptr, c: c_double    )   -> c_int;
+    pub fn mpfi_div_d       (a: mpfi_ptr, b: mpfi_srcptr, c: c_double    )   -> c_int;
+    pub fn mpfi_d_div       (a: mpfi_ptr, b: c_double   , c: mpfi_srcptr )   -> c_int;
 
     /* arithmetic operations between an interval operand and an unsigned long integer */
-    pub fn mpfi_add_ui     (a: mpfi_ptr, b: mpfi_srcptr, c: c_long      )   -> c_int;
-    pub fn mpfi_sub_ui     (a: mpfi_ptr, b: mpfi_srcptr, c: c_long      )   -> c_int;
-    pub fn mpfi_ui_sub     (a: mpfi_ptr, b: c_ulong    , c: mpfi_srcptr )   -> c_int;
-    pub fn mpfi_mul_ui     (a: mpfi_ptr, b: mpfi_srcptr, c: c_long      )   -> c_int;
-    pub fn mpfi_div_ui     (a: mpfi_ptr, b: mpfi_srcptr, c: c_ulong     )   -> c_int;
-    pub fn mpfi_ui_div     (a: mpfi_ptr, b: c_ulong    , c: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_add_ui      (a: mpfi_ptr, b: mpfi_srcptr, c: c_long      )   -> c_int;
+    pub fn mpfi_sub_ui      (a: mpfi_ptr, b: mpfi_srcptr, c: c_long      )   -> c_int;
+    pub fn mpfi_ui_sub      (a: mpfi_ptr, b: c_ulong    , c: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_mul_ui      (a: mpfi_ptr, b: mpfi_srcptr, c: c_long      )   -> c_int;
+    pub fn mpfi_div_ui      (a: mpfi_ptr, b: mpfi_srcptr, c: c_ulong     )   -> c_int;
+    pub fn mpfi_ui_div      (a: mpfi_ptr, b: c_ulong    , c: mpfi_srcptr )   -> c_int;
 
     // /* arithmetic operations between an interval operand and a long integer */
-    pub fn mpfi_add_si     (a: mpfi_ptr, b: mpfi_srcptr, c: c_long      )   -> c_int;
-    pub fn mpfi_sub_si     (a: mpfi_ptr, b: mpfi_srcptr, c: c_long      )   -> c_int;
-    pub fn mpfi_si_sub     (a: mpfi_ptr, b: c_long     , c: mpfi_srcptr )   -> c_int;
-    pub fn mpfi_mul_si     (a: mpfi_ptr, b: mpfi_srcptr, c: c_long      )   -> c_int;
-    pub fn mpfi_div_si     (a: mpfi_ptr, b: mpfi_srcptr, c: c_long      )   -> c_int;
-    pub fn mpfi_si_div     (a: mpfi_ptr, b: c_long     , c: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_add_si      (a: mpfi_ptr, b: mpfi_srcptr, c: c_long      )   -> c_int;
+    pub fn mpfi_sub_si      (a: mpfi_ptr, b: mpfi_srcptr, c: c_long      )   -> c_int;
+    pub fn mpfi_si_sub      (a: mpfi_ptr, b: c_long     , c: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_mul_si      (a: mpfi_ptr, b: mpfi_srcptr, c: c_long      )   -> c_int;
+    pub fn mpfi_div_si      (a: mpfi_ptr, b: mpfi_srcptr, c: c_long      )   -> c_int;
+    pub fn mpfi_si_div      (a: mpfi_ptr, b: c_long     , c: mpfi_srcptr )   -> c_int;
 
     /* arithmetic operations between an interval operand and a multiple prec. integer */
-    pub fn mpfi_add_z      (a: mpfi_ptr, b: mpfi_srcptr, c: mpz_srcptr  )   -> c_int;
-    pub fn mpfi_sub_z      (a: mpfi_ptr, b: mpfi_srcptr, c: mpz_srcptr  )   -> c_int;
-    pub fn mpfi_z_sub      (a: mpfi_ptr, b: mpz_srcptr , c: mpfi_srcptr )   -> c_int;
-    pub fn mpfi_mul_z      (a: mpfi_ptr, b: mpfi_srcptr, c: mpz_srcptr  )   -> c_int;
-    pub fn mpfi_div_z      (a: mpfi_ptr, b: mpfi_srcptr, c: mpz_srcptr  )   -> c_int;
-    pub fn mpfi_z_div      (a: mpfi_ptr, b: mpz_srcptr , c: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_add_z       (a: mpfi_ptr, b: mpfi_srcptr, c: mpz_srcptr  )   -> c_int;
+    pub fn mpfi_sub_z       (a: mpfi_ptr, b: mpfi_srcptr, c: mpz_srcptr  )   -> c_int;
+    pub fn mpfi_z_sub       (a: mpfi_ptr, b: mpz_srcptr , c: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_mul_z       (a: mpfi_ptr, b: mpfi_srcptr, c: mpz_srcptr  )   -> c_int;
+    pub fn mpfi_div_z       (a: mpfi_ptr, b: mpfi_srcptr, c: mpz_srcptr  )   -> c_int;
+    pub fn mpfi_z_div       (a: mpfi_ptr, b: mpz_srcptr , c: mpfi_srcptr )   -> c_int;
 
     /* arithmetic operations between an interval operand and a multiple prec. rational */
-    pub fn mpfi_add_q      (a: mpfi_ptr, b: mpfi_srcptr, c: mpq_srcptr  )   -> c_int;
-    pub fn mpfi_sub_q      (a: mpfi_ptr, b: mpfi_srcptr, c: mpq_srcptr  )   -> c_int;
-    pub fn mpfi_q_sub      (a: mpfi_ptr, b: mpq_srcptr , c: mpfi_srcptr )   -> c_int;
-    pub fn mpfi_mul_q      (a: mpfi_ptr, b: mpfi_srcptr, c: mpq_srcptr  )   -> c_int;
-    pub fn mpfi_div_q      (a: mpfi_ptr, b: mpfi_srcptr, c: mpq_srcptr  )   -> c_int;
-    pub fn mpfi_q_div      (a: mpfi_ptr, b: mpq_srcptr , c: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_add_q       (a: mpfi_ptr, b: mpfi_srcptr, c: mpq_srcptr  )   -> c_int;
+    pub fn mpfi_sub_q       (a: mpfi_ptr, b: mpfi_srcptr, c: mpq_srcptr  )   -> c_int;
+    pub fn mpfi_q_sub       (a: mpfi_ptr, b: mpq_srcptr , c: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_mul_q       (a: mpfi_ptr, b: mpfi_srcptr, c: mpq_srcptr  )   -> c_int;
+    pub fn mpfi_div_q       (a: mpfi_ptr, b: mpfi_srcptr, c: mpq_srcptr  )   -> c_int;
+    pub fn mpfi_q_div       (a: mpfi_ptr, b: mpq_srcptr , c: mpfi_srcptr )   -> c_int;
 
     /* arithmetic operations between an interval operand and a mult. prec. floating-pt nb */
-    pub fn mpfi_add_fr     (a: mpfi_ptr, b: mpfi_srcptr, c: mpfr_srcptr )   -> c_int;
-    pub fn mpfi_sub_fr     (a: mpfi_ptr, b: mpfi_srcptr, c: mpfr_srcptr )   -> c_int;
-    pub fn mpfi_fr_sub     (a: mpfi_ptr, b: mpfr_srcptr, c: mpfi_srcptr )   -> c_int;
-    pub fn mpfi_mul_fr     (a: mpfi_ptr, b: mpfi_srcptr, c: mpfr_srcptr )   -> c_int;
-    pub fn mpfi_div_fr     (a: mpfi_ptr, b: mpfi_srcptr, c: mpfr_srcptr )   -> c_int;
-    pub fn mpfi_fr_div     (a: mpfi_ptr, b: mpfr_srcptr, c: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_add_fr      (a: mpfi_ptr, b: mpfi_srcptr, c: mpfr_srcptr )   -> c_int;
+    pub fn mpfi_sub_fr      (a: mpfi_ptr, b: mpfi_srcptr, c: mpfr_srcptr )   -> c_int;
+    pub fn mpfi_fr_sub      (a: mpfi_ptr, b: mpfr_srcptr, c: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_mul_fr      (a: mpfi_ptr, b: mpfi_srcptr, c: mpfr_srcptr )   -> c_int;
+    pub fn mpfi_div_fr      (a: mpfi_ptr, b: mpfi_srcptr, c: mpfr_srcptr )   -> c_int;
+    pub fn mpfi_fr_div      (a: mpfi_ptr, b: mpfr_srcptr, c: mpfi_srcptr )   -> c_int;
 
     /* arithmetic operations taking a single interval operand */
-    pub fn mpfi_neg        (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
-    pub fn mpfi_sqr        (a: mpfi_ptr, u: mpfi_srcptr )   -> c_int;   //  square ?
+    pub fn mpfi_neg         (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_sqr         (a: mpfi_ptr, u: mpfi_srcptr )   -> c_int;   //  square ?
     /* the inv function generates the whole real interval
     if 0 is in the interval defining the divisor */
-    pub fn mpfi_inv        (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;   // inverse ?
+    pub fn mpfi_inv         (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;   // inverse ?
     /* the sqrt of a (partially) negative interval is a NaN */
-    pub fn mpfi_sqrt       (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
-    pub fn mpfi_cbrt       (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_sqrt        (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_cbrt        (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
     /* the first interval contains the absolute values of */
     /* every element of the second interval */
-    pub fn mpfi_abs        (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_abs         (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
     // int     mpfi_inv        (mpfi_ptr, mpfi_srcptr);
-    pub fn mpfi_rec_sqrt   (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_rec_sqrt    (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
 
     /* extended division: returns 2 intervals if the denominator contains 0 */
-    pub fn mpfi_div_ext	   (res1: mpfi_ptr, res2: mpfi_ptr, op1: mpfi_srcptr, op2: mpfi_srcptr)   -> c_int;
+    pub fn mpfi_div_ext	    (res1: mpfi_ptr, res2: mpfi_ptr, op1: mpfi_srcptr, op2: mpfi_srcptr)   -> c_int;
 
     /* various operations */
-    pub fn mpfi_mul_2exp   (a: mpfi_ptr, b: mpfi_srcptr, c: c_ulong )   -> c_int;
-    pub fn mpfi_mul_2ui    (a: mpfi_ptr, b: mpfi_srcptr, c: c_ulong )   -> c_int;
-    pub fn mpfi_mul_2si    (a: mpfi_ptr, b: mpfi_srcptr, c: c_long  )   -> c_int;
-    pub fn mpfi_div_2exp   (a: mpfi_ptr, b: mpfi_srcptr, c: c_ulong )   -> c_int;
-    pub fn mpfi_div_2ui    (a: mpfi_ptr, b: mpfi_srcptr, c: c_ulong )   -> c_int;
-    pub fn mpfi_div_2si    (a: mpfi_ptr, b: mpfi_srcptr, c: c_long  )   -> c_int;
+    pub fn mpfi_mul_2exp    (a: mpfi_ptr, b: mpfi_srcptr, c: c_ulong )   -> c_int;
+    pub fn mpfi_mul_2ui     (a: mpfi_ptr, b: mpfi_srcptr, c: c_ulong )   -> c_int;
+    pub fn mpfi_mul_2si     (a: mpfi_ptr, b: mpfi_srcptr, c: c_long  )   -> c_int;
+    pub fn mpfi_div_2exp    (a: mpfi_ptr, b: mpfi_srcptr, c: c_ulong )   -> c_int;
+    pub fn mpfi_div_2ui     (a: mpfi_ptr, b: mpfi_srcptr, c: c_ulong )   -> c_int;
+    pub fn mpfi_div_2si     (a: mpfi_ptr, b: mpfi_srcptr, c: c_long  )   -> c_int;
 
     // /* Special functions                                        */
-    // int     mpfi_log        (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_exp        (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_exp2       (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_exp10      (mpfi_ptr, mpfi_srcptr);
+    pub fn mpfi_log         (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_exp         (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_exp2        (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_exp10       (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
 
-    // int     mpfi_cos        (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_sin        (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_tan        (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_acos       (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_asin       (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_atan       (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_atan2      (mpfi_ptr, mpfi_srcptr, mpfi_srcptr);
+    pub fn mpfi_cos         (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_sin         (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_tan         (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_acos        (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_asin        (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_atan        (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_atan2       (a: mpfi_ptr, b: mpfi_srcptr, c: mpfi_srcptr )   -> c_int;
 
-    // int     mpfi_sec        (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_csc        (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_cot        (mpfi_ptr, mpfi_srcptr);
+    pub fn mpfi_sec         (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_csc         (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_cot         (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
 
-    // int     mpfi_cosh       (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_sinh       (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_tanh       (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_acosh      (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_asinh      (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_atanh      (mpfi_ptr, mpfi_srcptr);
+    pub fn mpfi_cosh        (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_sinh        (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_tanh        (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_acosh       (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_asinh       (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_atanh       (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
 
-    // int     mpfi_sech       (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_csch       (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_coth       (mpfi_ptr, mpfi_srcptr);
+    pub fn mpfi_sech        (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_csch        (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_coth        (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
 
-    // int     mpfi_log1p      (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_log10p1    (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_log2p1     (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_expm1      (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_exp2m1     (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_exp10m1    (mpfi_ptr, mpfi_srcptr);
+    pub fn mpfi_log1p       (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_log10p1     (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_log2p1      (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_expm1       (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_exp2m1      (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_exp10m1     (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
 
-    // int     mpfi_log2       (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_log10      (mpfi_ptr, mpfi_srcptr);
+    pub fn mpfi_log2        (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_log10       (a: mpfi_ptr, b: mpfi_srcptr )   -> c_int;
 
-    // int     mpfi_hypot      (mpfi_ptr, mpfi_srcptr, mpfi_srcptr);
+    pub fn mpfi_hypot       (a: mpfi_ptr, b: mpfi_srcptr, c: mpfi_srcptr )   -> c_int;
 
-    // int     mpfi_const_log2         (mpfi_ptr);
-    // int     mpfi_const_pi           (mpfi_ptr);
-    // int     mpfi_const_euler        (mpfi_ptr);
-    // int     mpfi_const_catalan      (mpfi_ptr);
+    pub fn mpfi_const_log2      (a: mpfi_ptr)  -> c_int;
+    pub fn mpfi_const_pi        (a: mpfi_ptr)  -> c_int;
+    pub fn mpfi_const_euler     (a: mpfi_ptr)  -> c_int;
+    pub fn mpfi_const_catalan   (a: mpfi_ptr)  -> c_int;
 
     // /* Comparison functions                                     */
     // /* Warning: the meaning of interval comparison is not clearly defined */
@@ -251,6 +251,25 @@ extern {
     // extern int    (*mpfi_is_zero)   (mpfi_srcptr);
     // extern int    (*mpfi_is_strictly_pos) (mpfi_srcptr);
     // extern int    (*mpfi_is_strictly_neg) (mpfi_srcptr);
+
+
+    pub fn  mpfi_cmp        (a: mpfi_srcptr, b: mpfi_srcptr )   -> c_int;
+
+    pub fn  mpfi_cmp_d      (a: mpfi_srcptr, b: c_double    )   -> c_int;
+    pub fn  mpfi_cmp_ui     (a: mpfi_srcptr, b: c_ulong     )   -> c_int;
+    pub fn  mpfi_cmp_si     (a: mpfi_srcptr, b: c_long      )   -> c_int;
+    pub fn  mpfi_cmp_z      (a: mpfi_srcptr, b: mpz_srcptr  )   -> c_int;
+    pub fn  mpfi_cmp_q      (a: mpfi_srcptr, b: mpq_srcptr  )   -> c_int;
+    pub fn  mpfi_cmp_fr     (a: mpfi_srcptr, b: mpfr_srcptr )   -> c_int;
+
+    pub fn  mpfi_is_pos     (a: mpfi_srcptr)   -> c_int;
+    pub fn  mpfi_is_nonneg  (a: mpfi_srcptr)   -> c_int;
+    pub fn  mpfi_is_neg     (a: mpfi_srcptr)   -> c_int;
+    pub fn  mpfi_is_nonpos  (a: mpfi_srcptr)   -> c_int;
+    pub fn  mpfi_is_zero    (a: mpfi_srcptr)   -> c_int;
+    pub fn  mpfi_is_strictly_pos    (a: mpfi_srcptr)   -> c_int;
+    pub fn  mpfi_is_strictly_neg    (a: mpfi_srcptr)   -> c_int;
+    
 
     // int     mpfi_has_zero   (mpfi_srcptr);
 
