@@ -1,4 +1,4 @@
-
+#[cfg(target_os="linux")]
 pub mod cspice {
     // use std::ffi::CString;
     use std::os::raw::c_char;
