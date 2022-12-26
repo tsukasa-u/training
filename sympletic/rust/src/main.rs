@@ -123,6 +123,8 @@ fn csv_writer(data:&Vec<[f32; 10]>) -> Result<(), Box<dyn std::error::Error>> {
 
 fn main() {
 
+    tester::tester();
+
     let c:Vec<f64> = vec![
         1.0/2.0/(2.0 - f64::powf(2.0, 1.0/3.0)),
         (1.0 - f64::powf(2.0, 1.0/3.0))/2.0/(2.0 - f64::powf(2.0, 1.0/3.0)),
