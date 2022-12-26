@@ -1,3 +1,12 @@
+
+#[cfg(target_os="linux")]
 pub mod interval;
-pub mod circle;
-pub mod rectangle;
+
+#[cfg(target_os="linux")]
+mod gmp;
+
+#[cfg(target_os="linux")]
+mod mpfr;
+
+#[cfg(target_os="linux")]
+mod mpfi;
