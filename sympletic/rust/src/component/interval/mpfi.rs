@@ -253,102 +253,102 @@ extern {
     // extern int    (*mpfi_is_strictly_neg) (mpfi_srcptr);
 
 
-    pub fn  mpfi_cmp        (a: mpfi_srcptr, b: mpfi_srcptr )   -> c_int;
+    pub fn mpfi_cmp         (a: mpfi_srcptr, b: mpfi_srcptr )   -> c_int;
 
-    pub fn  mpfi_cmp_d      (a: mpfi_srcptr, b: c_double    )   -> c_int;
-    pub fn  mpfi_cmp_ui     (a: mpfi_srcptr, b: c_ulong     )   -> c_int;
-    pub fn  mpfi_cmp_si     (a: mpfi_srcptr, b: c_long      )   -> c_int;
-    pub fn  mpfi_cmp_z      (a: mpfi_srcptr, b: mpz_srcptr  )   -> c_int;
-    pub fn  mpfi_cmp_q      (a: mpfi_srcptr, b: mpq_srcptr  )   -> c_int;
-    pub fn  mpfi_cmp_fr     (a: mpfi_srcptr, b: mpfr_srcptr )   -> c_int;
+    pub fn mpfi_cmp_d       (a: mpfi_srcptr, b: c_double    )   -> c_int;
+    pub fn mpfi_cmp_ui      (a: mpfi_srcptr, b: c_ulong     )   -> c_int;
+    pub fn mpfi_cmp_si      (a: mpfi_srcptr, b: c_long      )   -> c_int;
+    pub fn mpfi_cmp_z       (a: mpfi_srcptr, b: mpz_srcptr  )   -> c_int;
+    pub fn mpfi_cmp_q       (a: mpfi_srcptr, b: mpq_srcptr  )   -> c_int;
+    pub fn mpfi_cmp_fr      (a: mpfi_srcptr, b: mpfr_srcptr )   -> c_int;
 
-    pub fn  mpfi_is_pos     (a: mpfi_srcptr)   -> c_int;
-    pub fn  mpfi_is_nonneg  (a: mpfi_srcptr)   -> c_int;
-    pub fn  mpfi_is_neg     (a: mpfi_srcptr)   -> c_int;
-    pub fn  mpfi_is_nonpos  (a: mpfi_srcptr)   -> c_int;
-    pub fn  mpfi_is_zero    (a: mpfi_srcptr)   -> c_int;
-    pub fn  mpfi_is_strictly_pos    (a: mpfi_srcptr)   -> c_int;
-    pub fn  mpfi_is_strictly_neg    (a: mpfi_srcptr)   -> c_int;
+    pub fn mpfi_is_pos      (a: mpfi_srcptr)   -> c_int;
+    pub fn mpfi_is_nonneg   (a: mpfi_srcptr)   -> c_int;
+    pub fn mpfi_is_neg      (a: mpfi_srcptr)   -> c_int;
+    pub fn mpfi_is_nonpos   (a: mpfi_srcptr)   -> c_int;
+    pub fn mpfi_is_zero     (a: mpfi_srcptr)   -> c_int;
+    pub fn mpfi_is_strictly_pos     (a: mpfi_srcptr)   -> c_int;
+    pub fn mpfi_is_strictly_neg     (a: mpfi_srcptr)   -> c_int;
     
 
-    // int     mpfi_has_zero   (mpfi_srcptr);
+    pub fn mpfi_has_zero    (a: mpfi_srcptr)   -> c_int;
 
-    // int     mpfi_nan_p      (mpfi_srcptr);
-    // int     mpfi_inf_p      (mpfi_srcptr);
-    // int     mpfi_bounded_p  (mpfi_srcptr);
+    pub fn mpfi_nan_p       (a: mpfi_srcptr)   -> c_int;
+    pub fn mpfi_inf_p       (a: mpfi_srcptr)   -> c_int;
+    pub fn mpfi_bounded_p   (a: mpfi_srcptr)   -> c_int;
 
-    // /* Interval manipulation */
+    /* Interval manipulation */
 
-    // /* operations related to the internal representation by endpoints */
+    /* operations related to the internal representation by endpoints */
 
-    // /* get left or right bound of the interval defined by the
-    // second argument and put the result in the first one */
-    // int     mpfi_get_left   (mpfr_ptr, mpfi_srcptr);
-    // int     mpfi_get_right  (mpfr_ptr, mpfi_srcptr);
+    /* get left or right bound of the interval defined by the
+    second argument and put the result in the first one */
+    pub fn mpfi_get_left    (b: mpfr_ptr, a: mpfi_srcptr)   -> c_int;
+    pub fn mpfi_get_right   (b: mpfr_ptr, a: mpfi_srcptr)   -> c_int;
 
-    // int     mpfi_revert_if_needed  (mpfi_ptr);
+    pub fn mpfi_revert_if_needed    (a: mpfi_ptr)   -> c_int;
 
-    // /* Set operations on intervals */
-    // /* "Convex hulls" */
-    // /* extends the interval defined by the first argument
-    // so that it contains the second one */
+    /* Set operations on intervals */
+    /* "Convex hulls" */
+    /* extends the interval defined by the first argument
+    so that it contains the second one */
 
-    // int     mpfi_put        (mpfi_ptr, mpfi_srcptr);
-    // int     mpfi_put_d      (mpfi_ptr, const double);
-    // int     mpfi_put_si     (mpfi_ptr, const long);
-    // int     mpfi_put_ui     (mpfi_ptr, const unsigned long);
-    // int     mpfi_put_z      (mpfi_ptr, mpz_srcptr);
-    // int     mpfi_put_q      (mpfi_ptr, mpq_srcptr);
-    // int     mpfi_put_fr     (mpfi_ptr, mpfr_srcptr);
+    pub fn mpfi_put         (a: mpfi_ptr, b: mpfi_srcptr)   -> c_int;
+    pub fn mpfi_put_d       (a: mpfi_ptr, b: c_double   )   -> c_int;
+    pub fn mpfi_put_si      (a: mpfi_ptr, b: c_long     )   -> c_int;
+    pub fn mpfi_put_ui      (a: mpfi_ptr, b: c_ulong    )   -> c_int;
+    pub fn mpfi_put_z       (a: mpfi_ptr, b: mpz_srcptr )   -> c_int;
+    pub fn mpfi_put_q       (a: mpfi_ptr, b: mpq_srcptr )   -> c_int;
+    pub fn mpfi_put_fr      (a: mpfi_ptr, b: mpfr_srcptr)   -> c_int;
 
-    // /* builds an interval whose left bound is the lower (round -infty)
-    // than the second argument and the right bound is greater
-    // (round +infty) than the third one */
+    /* builds an interval whose left bound is the lower (round -infty)
+    than the second argument and the right bound is greater
+    (round +infty) than the third one */
 
-    // int     mpfi_interv_d   (mpfi_ptr, const double, const double);
-    // int     mpfi_interv_si  (mpfi_ptr, const long, const long);
-    // int     mpfi_interv_ui  (mpfi_ptr, const unsigned long, const unsigned long);
-    // int     mpfi_interv_z   (mpfi_ptr, mpz_srcptr, mpz_srcptr);
-    // int     mpfi_interv_q   (mpfi_ptr, mpq_srcptr, mpq_srcptr);
-    // int     mpfi_interv_fr  (mpfi_ptr, mpfr_srcptr, mpfr_srcptr);
+    pub fn mpfi_interv_d    (a: mpfi_ptr, b: c_double   , c: c_double    )   -> c_int;
+    pub fn mpfi_interv_si   (a: mpfi_ptr, b: c_long     , c: c_long      )   -> c_int;
+    pub fn mpfi_interv_ui   (a: mpfi_ptr, b: c_ulong    , c: c_ulong     )   -> c_int;
+    pub fn mpfi_interv_z    (a: mpfi_ptr, b: mpz_srcptr , c: mpz_srcptr  )   -> c_int;
+    pub fn mpfi_interv_q    (a: mpfi_ptr, b: mpq_srcptr , c: mpq_srcptr  )   -> c_int;
+    pub fn mpfi_interv_fr   (a: mpfi_ptr, b: mpfr_srcptr, c: mpfr_srcptr )   -> c_int;
 
-    // /* Inclusion tests */
-    // /* tests if the first argument is inside the interval
-    // defined by the second one */
-    // int     mpfi_is_strictly_inside (mpfi_srcptr, mpfi_srcptr);
-    // int     mpfi_is_inside        	(mpfi_srcptr, mpfi_srcptr);
-    // int     mpfi_is_inside_d      	(const double, mpfi_srcptr);
-    // int     mpfi_is_inside_ui     	(const unsigned long, mpfi_srcptr);
-    // int     mpfi_is_inside_si     	(const long, mpfi_srcptr);
-    // int     mpfi_is_inside_z      	(mpz_srcptr, mpfi_srcptr);
-    // int     mpfi_is_inside_q      	(mpq_srcptr, mpfi_srcptr);
-    // int     mpfi_is_inside_fr   	(mpfr_srcptr, mpfi_srcptr);
+    /* Inclusion tests */
+    /* tests if the first argument is inside the interval
+    defined by the second one */
+    pub fn mpfi_is_strictly_inside  (a: mpfi_srcptr, b: mpfi_srcptr)   -> c_int;
+    pub fn mpfi_is_inside        	(a: mpfi_srcptr, b: mpfi_srcptr)   -> c_int;
+    pub fn mpfi_is_inside_d      	(a: c_double   , b: mpfi_srcptr)   -> c_int;
+    pub fn mpfi_is_inside_ui     	(a: c_ulong    , b: mpfi_srcptr)   -> c_int;
+    pub fn mpfi_is_inside_si     	(a: c_long     , b: mpfi_srcptr)   -> c_int;
+    pub fn mpfi_is_inside_z      	(a: mpz_srcptr , b: mpfi_srcptr)   -> c_int;
+    pub fn mpfi_is_inside_q      	(a: mpq_srcptr , b: mpfi_srcptr)   -> c_int;
+    pub fn mpfi_is_inside_fr   	    (a: mpfr_srcptr, b: mpfi_srcptr)   -> c_int;
 
-    // /* set operations */
-    // int     mpfi_is_empty   (mpfi_srcptr);
-    // int     mpfi_intersect  (mpfi_ptr, mpfi_srcptr, mpfi_srcptr);
-    // int     mpfi_union      (mpfi_ptr, mpfi_srcptr, mpfi_srcptr);
+    /* set operations */
+    pub fn mpfi_is_empty            (a: mpfi_srcptr)   -> c_int;
+    pub fn mpfi_intersect           (a: mpfi_ptr, b: mpfi_srcptr, c: mpfi_srcptr)   -> c_int;
+    pub fn mpfi_union               (a: mpfi_ptr, b: mpfi_srcptr, c: mpfi_srcptr)   -> c_int;
 
-    // /* complement... : to do later */
+    /* complement... : to do later */
 
 
-    // /* Miscellaneous */
+    /* Miscellaneous */
 
-    // /* adds the second argument to the right bound of the first one
-    // and subtracts the second argument to the left bound of
-    // the first one */
-    // int     mpfi_increase   (mpfi_ptr, mpfr_srcptr);
-    // /* keeps the same center and multiply the radius by 2*(1+fact) */
-    // int     mpfi_blow       (mpfi_ptr, mpfi_srcptr, double);
-    // /* splits the interval into 2 halves */
-    // int     mpfi_bisect     (mpfi_ptr, mpfi_ptr, mpfi_srcptr);
+    /* adds the second argument to the right bound of the first one
+    and subtracts the second argument to the left bound of
+    the first one */
+    pub fn mpfi_increase    (a: mpfi_ptr, e: mpfr_srcptr)   -> c_int;
+    /* keeps the same center and multiply the radius by 2*(1+fact) */
+    pub fn mpfi_blow        (y: mpfi_ptr, x: mpfi_srcptr, fact: c_double)   -> c_int;
+    /* splits the interval into 2 halves */
+    pub fn mpfi_bisect      (y1: mpfi_ptr, y2: mpfi_ptr, y: mpfi_srcptr)   -> c_int;
 
-    // const char * mpfi_get_version (void);
+    pub fn mpfi_get_version (           )   -> *const c_char;
 
-    // /* Error handling */
+    /* Error handling */
 
-    // extern int mpfi_error;
-    // void    mpfi_reset_error (void);
-    // void    mpfi_set_error   (const int);
-    // int     mpfi_is_error    (void);
+    pub fn mpfi_error       (           )   -> c_int;
+    pub fn mpfi_reset_error (           )   -> c_void;
+    pub fn mpfi_set_error   (i: c_int   )   -> c_void;
+    pub fn mpfi_is_error    (           )   -> c_int;
 }
