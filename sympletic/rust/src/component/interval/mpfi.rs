@@ -23,8 +23,8 @@ pub struct __mpfi_struct {
     pub right: __mpfr_struct
 }
 
-type mpfi_ptr = *mut __mpfi_struct;
-type mpfi_srcptr = *const __mpfi_struct;
+pub type mpfi_ptr = *mut __mpfi_struct;
+pub type mpfi_srcptr = *const __mpfi_struct;
 type mpfr_prec_t = c_long;
 
 #[link(name="mpfi")]
@@ -120,10 +120,10 @@ extern {
     pub fn mpfi_d_div       (a: mpfi_ptr, b: c_double   , c: mpfi_srcptr )   -> c_int;
 
     /* arithmetic operations between an interval operand and an unsigned long integer */
-    pub fn mpfi_add_ui      (a: mpfi_ptr, b: mpfi_srcptr, c: c_long      )   -> c_int;
-    pub fn mpfi_sub_ui      (a: mpfi_ptr, b: mpfi_srcptr, c: c_long      )   -> c_int;
+    pub fn mpfi_add_ui      (a: mpfi_ptr, b: mpfi_srcptr, c: c_ulong     )   -> c_int;
+    pub fn mpfi_sub_ui      (a: mpfi_ptr, b: mpfi_srcptr, c: c_ulong     )   -> c_int;
     pub fn mpfi_ui_sub      (a: mpfi_ptr, b: c_ulong    , c: mpfi_srcptr )   -> c_int;
-    pub fn mpfi_mul_ui      (a: mpfi_ptr, b: mpfi_srcptr, c: c_long      )   -> c_int;
+    pub fn mpfi_mul_ui      (a: mpfi_ptr, b: mpfi_srcptr, c: c_ulong     )   -> c_int;
     pub fn mpfi_div_ui      (a: mpfi_ptr, b: mpfi_srcptr, c: c_ulong     )   -> c_int;
     pub fn mpfi_ui_div      (a: mpfi_ptr, b: c_ulong    , c: mpfi_srcptr )   -> c_int;
 

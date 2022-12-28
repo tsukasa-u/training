@@ -20,9 +20,9 @@ type mpfr_prec_t = c_int;
 type mpfr_uprec_t = c_uiont;
 
 #[cfg(target_pointer_width="64")]
-type  mpfr_prec_t = c_long;
+pub type  mpfr_prec_t = c_long;
 #[cfg(target_pointer_width="64")]
-type mpfr_uprec_t = c_ulong;
+pub type mpfr_uprec_t = c_ulong;
 
 /* Definition of sign */
 type mpfr_sign_t = c_int;
@@ -51,6 +51,7 @@ pub struct __mpfr_struct {
 // type mp_rnd_t = mpfr_rnd_t;
 // type mp_prec_t = mpfr_prec_t;
 
-
 pub type mpfr_ptr = *mut __mpfr_struct;
 pub type mpfr_srcptr = *const __mpfr_struct;
+
+// pub struct mpfr_t(__mpfr_struct);
