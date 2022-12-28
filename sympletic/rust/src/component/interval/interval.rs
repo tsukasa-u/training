@@ -6,55 +6,30 @@ use super::gmp::mpz_srcptr;
 use super::mpfr::mpfr_prec_t;
 use super::mpfr::mpfr_srcptr;
 use super::mpfi::mpfi_srcptr;
-use super::mpfr::__mpfr_struct;
+use super::mpfr::mpfr_t;
 use super::mpfi::__mpfi_struct;
 use super::*;
 
 use std::ffi::c_ulong;
 use std::ffi::c_char;
 
-pub struct mpfi_t(__mpfi_struct);
+pub type mpfi_t = __mpfi_struct;
 
 impl mpfi_t {
-    // Default 53 bits
     pub fn new() -> Self {
-        let mut ret: Self = Self(
-            __mpfi_struct {
-                left: __mpfr_struct {
-                    _mpfr_prec : 0,
-                    _mpfr_sign : 0,
-                    _mpfr_exp :  0,
-                    _mpfr_d :  0 as *mut mp_limb_t
-                },
-                right: __mpfr_struct {
-                    _mpfr_prec : 0,
-                    _mpfr_sign : 0,
-                    _mpfr_exp :  0,
-                    _mpfr_d :  0 as *mut mp_limb_t
-                }
-            }
-        );
+        let mut ret: Self = Self {
+            left: mpfr_t::new(),
+            right: mpfr_t::new()
+        };
         ret.init();
         return ret;
     }
 
     pub fn new2(prec: u64) -> Self {
-        let mut ret: Self = Self(
-            __mpfi_struct {
-                left: __mpfr_struct {
-                    _mpfr_prec : 0,
-                    _mpfr_sign : 0,
-                    _mpfr_exp :  0,
-                    _mpfr_d :  0 as *mut mp_limb_t
-                },
-                right: __mpfr_struct {
-                    _mpfr_prec : 0,
-                    _mpfr_sign : 0,
-                    _mpfr_exp :  0,
-                    _mpfr_d :  0 as *mut mp_limb_t
-                }
-            }
-        );
+        let mut ret: Self = Self {
+            left: mpfr_t::new(),
+            right: mpfr_t::new()
+        };
         ret.init2(prec);
         return ret;
     }
@@ -62,88 +37,40 @@ impl mpfi_t {
     // Dont't use it !! Use init2
     pub fn init(&mut self) {
         unsafe {
-            mpfi::mpfi_init(&mut self.0);
+            mpfi::mpfi_init(self);
         }
     }
 
     pub fn init2(&mut self, prec: u64) {
         unsafe {
-            mpfi::mpfi_init2(&mut self.0, prec as mpfr_prec_t);
+            mpfi::mpfi_init2(self, prec as mpfr_prec_t);
         }
     }
 
     pub fn clear(&mut self) {
         unsafe {
-            mpfi::mpfi_clear(&mut self.0);
+            mpfi::mpfi_clear(self);
         }
     }
 
     pub fn get_prec(&self) -> u64 {
         let mut ret: mpfr_prec_t = 0;
         unsafe {
-            ret = mpfi::mpfi_get_prec(&(*self).0);
+            ret = mpfi::mpfi_get_prec(self);
         }
         return ret as u64;
     }
 
     pub fn set_prec(&mut self, prec: u64) {
         unsafe {
-            mpfi::mpfi_set_prec(&mut self.0, prec as mpfr_prec_t);
+            mpfi::mpfi_set_prec(self, prec as mpfr_prec_t);
         }
     }
-
-    pub fn set(&mut self, op: &Self) -> i32 {
-        let mut ret: i32 = 0;
-        unsafe {
-            ret = mpfi::mpfi_set(&mut self.0, &(*op).0);
-        }
-        return ret;
-    }
-
-    pub fn set_si(&mut self, op: i64) -> i32 {
-        let mut ret: i32 = 0;
-        unsafe {
-            ret = mpfi::mpfi_set_si(&mut self.0, op);
-        }
-        return ret;
-    }
-
-    pub fn set_ui(&mut self, op: u64) -> i32 {
-        let mut ret: i32 = 0;
-        unsafe {
-            ret = mpfi::mpfi_set_ui(&mut self.0, op);
-        }
-        return ret;
-    }
-    
-    pub fn set_d(&mut self, op: f64) -> i32 {
-        let mut ret: i32 = 0;
-        unsafe {
-            ret = mpfi::mpfi_set_d(&mut self.0, op);
-        }
-        return ret;
-    }
-    
-    pub fn set_flt(&mut self, op: f32) -> i32 {
-        let mut ret: i32 = 0;
-        unsafe {
-            ret = mpfi::mpfi_set_flt(&mut self.0, op);
-        }
-        return ret;
-    }
-    
-    // pub fn set_fr(&mut self, op: mpfr_srcptr) -> i32 {
-    //     let mut ret: i32 = 0;
-    //     unsafe {
-    //         ret = mpfi::mpfi_set_fr(&mut self.0, op);
-    //     }
-    //     return ret;
-    // }
 
     pub fn set_str(&mut self, op: &str) -> i32 {
         let mut ret: i32 = 0;
         unsafe {
-            ret = mpfi::mpfi_set_str(&mut self.0, (*op).as_ptr() as *const c_char);
+            ret = mpfi::mpfi_set_str(self, (*op).as_ptr() as *const c_char);
         }
         return ret;
     }
@@ -152,18 +79,26 @@ impl mpfi_t {
     pub fn get_d(&self) -> f64 {
         let mut ret: f64 = 0.0;
         unsafe {
-            ret = mpfi::mpfi_get_d(&self.0);
+            ret = mpfi::mpfi_get_d(self);
         }
         return ret;
     }
 
-    // pub fn get_fr(&self) -> Self {
-    //     let mut ret: __mpfr_struct ;
-    //     unsafe {
-    //         mpfi::mpfi_get_fr();
-    //     }
-    //     return ret;
-    // }
+    pub fn get_fr(&self) -> mpfr_t {
+        let mut ret: mpfr_t = mpfr_t::new() ;
+        unsafe {
+            mpfi::mpfi_get_fr(&mut ret, self);
+        }
+        return ret;
+    }
+
+    pub fn revert_if_needed(&mut self) -> i32 {
+        let mut ret: i32 = 0;
+        unsafe {
+            ret = mpfi::mpfi_revert_if_needed(self);
+        }
+        return ret;
+    }
 
 }
 
@@ -172,9 +107,23 @@ macro_rules! fn0_const {
         pub fn $s1() -> mpfi_t {
             let mut tmp: mpfi_t = mpfi_t::new();
             unsafe {
-                mpfi::$s2(&mut tmp.0);
+                mpfi::$s2(&mut tmp);
             }
             return tmp;
+        }
+    )
+}
+
+macro_rules! fn1_ex {
+    ($s1: ident $s2: ident | $t: ty | $u: ty) => (
+        impl mpfi_t {
+            pub fn $s1(op1: $t, op2: mpfi_srcptr) -> $u {
+                let mut ret: $u = 0 as $u;
+                unsafe {
+                    ret = mpfi::$s2(op1, op2);
+                }
+                return ret;
+            }
         }
     )
 }
@@ -183,9 +132,9 @@ macro_rules! fn0_impl {
     ($s1: ident $s2: ident | | $u: ty) => (
         impl mpfi_t {
             pub fn $s1(&self) -> $u {
-                let mut tmp: mpfi_t = mpfi_t::new();
+                let mut tmp: $u = <$u>::new();
                 unsafe {
-                    mpfi::$s2(&mut tmp.0, &self.0);
+                    mpfi::$s2(&mut tmp, self);
                 }
                 return tmp;
             }
@@ -197,9 +146,9 @@ macro_rules! fn1_impl {
     ($s1: ident $s2: ident | $t: ty | $u: ty) => (
         impl mpfi_t {
             pub fn $s1(&self, x: $t) -> $u {
-                let mut tmp: mpfi_t = mpfi_t::new();
+                let mut tmp: $u = <$u>::new();
                 unsafe {
-                    mpfi::$s2(&mut tmp.0, &self.0, x);
+                    mpfi::$s2(&mut tmp, self, x);
                 }
                 return tmp;
             }
@@ -207,28 +156,38 @@ macro_rules! fn1_impl {
     )
 }
 
-
-macro_rules! fn3_impl {
+macro_rules! fn2_impl {
     ($s1: ident $s2: ident | $t: ty | $u: ty) => (
         impl mpfi_t {
-            pub fn $s1(&self, x: & $t) -> $u {
-                let mut tmp: mpfi_t = mpfi_t::new();
+            pub fn $s1(&mut self, op: $t) -> $u {
+                let mut ret: $u = 0 as $u;
                 unsafe {
-                    mpfi::$s2(&mut tmp.0, &self.0, &x.0);
+                    ret = mpfi::$s2(self, op);
                 }
-                return tmp;
+                return ret;
             }
         }
-    )
+    );
+    ($s1: ident $s2: ident | $t1: ty, $t2: ty | $u: ty) => (
+        impl mpfi_t {
+            pub fn $s1(&mut self, op1: $t1, op2: $t2) -> $u {
+                let mut ret: $u = 0 as $u;
+                unsafe {
+                    ret = mpfi::$s2(self, op1, op2);
+                }
+                return ret;
+            }
+        }
+    );
 }
 
 macro_rules! fn4_impl {
     ($s1: ident $s2: ident | $t: ty | $u: ty) => (
         impl mpfi_t {
             pub fn $s1(&self, x: $t) -> $u {
-                let mut tmp: i32 = 0;
+                let mut tmp: $u = 0 as $u;
                 unsafe {
-                    tmp = mpfi::$s2(&self.0, x);
+                    tmp = mpfi::$s2(self, x);
                 }
                 return tmp;
             }
@@ -240,15 +199,22 @@ macro_rules! fn5_impl {
     ($s1: ident $s2: ident | | $u: ty) => (
         impl mpfi_t {
             pub fn $s1(&self) -> $u {
-                let mut tmp: i32 = 0;
+                let mut tmp: $u = 0 as $u;
                 unsafe {
-                    tmp = mpfi::$s2(&self.0);
+                    tmp = mpfi::$s2(self);
                 }
                 return tmp;
             }
         }
     )
 }
+
+fn2_impl! {set      mpfi_set    | mpfi_srcptr   | i32   }
+fn2_impl! {set_si   mpfi_set_si     | i64   | i32   }
+fn2_impl! {set_ui   mpfi_set_ui     | u64   | i32   }
+fn2_impl! {set_d    mpfi_set_d      | f64   | i32   }
+fn2_impl! {set_flt  mpfi_set_flt    | f32   | i32   }
+fn2_impl! {set_fr   mpfi_set_fr     | mpfr_srcptr   | i32   }
 
 fn0_impl! { sqr     mpfi_sqr    |   | mpfi_t    }
 fn0_impl! { inv     mpfi_inv    |   | mpfi_t    }
@@ -275,27 +241,29 @@ fn0_impl! { tan     mpfi_tan    |   | mpfi_t    }
 fn0_impl! { acos    mpfi_acos   |   | mpfi_t    }
 fn0_impl! { asin    mpfi_asin   |   | mpfi_t    }
 fn0_impl! { atan    mpfi_atan   |   | mpfi_t    }
-fn3_impl! { atan2   mpfi_atan2  | mpfi_t    | mpfi_t    }
+fn1_impl! { atan2   mpfi_atan2  | mpfi_srcptr   | mpfi_t    }
 
 fn0_impl! { sech    mpfi_sech   |   | mpfi_t    }
 fn0_impl! { csch    mpfi_csch   |   | mpfi_t    }
 fn0_impl! { coth    mpfi_coth   |   | mpfi_t    }
 
-fn0_impl! { log1p    mpfi_log1p     |   | mpfi_t    }
-fn0_impl! { log10p1  mpfi_log10p1   |   | mpfi_t    }
-fn0_impl! { log2p1   mpfi_log2p1    |   | mpfi_t    }
-fn0_impl! { expm1    mpfi_expm1     |   | mpfi_t    }
-fn0_impl! { exp2m1   mpfi_exp2m1    |   | mpfi_t    }
-fn0_impl! { exp10m1  mpfi_exp10m1   |   | mpfi_t    }
+fn0_impl! { log1p   mpfi_log1p      |   | mpfi_t    }
+fn0_impl! { log10p1 mpfi_log10p1    |   | mpfi_t    }
+fn0_impl! { log2p1  mpfi_log2p1     |   | mpfi_t    }
+fn0_impl! { expm1   mpfi_expm1      |   | mpfi_t    }
+fn0_impl! { exp2m1  mpfi_exp2m1     |   | mpfi_t    }
+fn0_impl! { exp10m1 mpfi_exp10m1    |   | mpfi_t    }
 
-fn0_impl! { log2     mpfi_log2  |   | mpfi_t    }
-fn0_impl! { log10    mpfi_log10 |   | mpfi_t    }
+fn0_impl! { log2    mpfi_log2   |   | mpfi_t    }
+fn0_impl! { log10   mpfi_log10  |   | mpfi_t    }
 
-fn3_impl! { hypot    mpfi_hypot | mpfi_t    | mpfi_t    }
+fn1_impl! { hypot   mpfi_hypot  | mpfi_srcptr   | mpfi_t    }
 
-fn4_impl! { cmp_d    mpfi_cmp_d     | f64   | i32   }
-fn4_impl! { cmp_ui   mpfi_cmp_ui    | u64   | i32   }
-fn4_impl! { cmp_si   mpfi_cmp_si    | i64   | i32   }
+fn4_impl! { cmp     mpfi_cmp        | mpfi_srcptr   | i32   }
+
+fn4_impl! { cmp_d   mpfi_cmp_d      | f64   | i32   }
+fn4_impl! { cmp_ui  mpfi_cmp_ui     | u64   | i32   }
+fn4_impl! { cmp_si  mpfi_cmp_si     | i64   | i32   }
 
 fn5_impl! { pos     mpfi_is_pos     |   | i32   }
 fn5_impl! { nonneg  mpfi_is_nonneg  |   | i32   }
@@ -312,33 +280,33 @@ fn5_impl! { nan_p   mpfi_nan_p  |   | i32   }
 fn5_impl! { inf_p   mpfi_inf_p  |   | i32   }
 fn5_impl! { bounded_p   mpfi_bounded_p  |   | i32   }
 
-macro_rules! op1_impl {
-    ($s1: ident $s2: ident $s3: ident | $($t: ty)*) => ($(
-        impl std::ops::$s1<$t> for mpfi_t {
-            type Output =  mpfi_t;
+fn0_impl! { get_left    mpfi_get_left   |   | mpfr_t    }
+fn0_impl! { get_right   mpfi_get_right  |   | mpfr_t    }
 
-            // #[inline]
-            fn $s2(self, rhs: $t) -> Self::Output {
-                let mut tmp: mpfi_t = mpfi_t::new();
-                unsafe {
-                    mpfi::$s3(&mut tmp.0, &self.0, &rhs.0);
-                }
-                return tmp;
-            }
-        }
-    )*)
-}
+fn2_impl! { put     mpfi_put    | mpfi_srcptr   | i32   }
+fn2_impl! { put_si  mpfi_put_si     | i64   | i32   }
+fn2_impl! { put_ui  mpfi_put_ui     | u64   | i32   }
+fn2_impl! { put_d   mpfi_put_d      | f64   | i32   }
+fn2_impl! { put_fr  mpfi_put_fr     | mpfr_srcptr   | i32   }
+
+fn2_impl! { interv_si   mpfi_interv_si  | i64, i64    | i32   }
+fn2_impl! { interv_ui   mpfi_interv_ui  | u64, u64    | i32   }
+fn2_impl! { interv_d    mpfi_interv_d   | f64, f64    | i32   }
+fn2_impl! { interv_fr   mpfi_interv_fr  | mpfr_srcptr, mpfr_srcptr    | i32   }
+
+fn5_impl! { is_empty    mpfi_is_empty   |   | i32   }
+fn2_impl! { intersect   mpfi_intersect  | mpfi_srcptr, mpfi_srcptr    | i32   }
+fn2_impl! { union       mpfi_union      | mpfi_srcptr, mpfi_srcptr    | i32   }
 
 macro_rules! op2_impl {
     ($s1: ident $s2: ident $s3: ident | $($t: ty)*) => ($(
         impl std::ops::$s1<$t> for mpfi_t {
             type Output =  mpfi_t;
 
-            // #[inline]
             fn $s2(self, rhs: $t) -> Self::Output {
                 let mut tmp: mpfi_t = mpfi_t::new();
                 unsafe {
-                    mpfi::$s3(&mut tmp.0, &self.0, rhs);
+                    mpfi::$s3(&mut tmp, &self, rhs);
                 }
                 return tmp;
             }
@@ -351,11 +319,10 @@ macro_rules! op3_impl {
         impl std::ops::$s1<mpfi_t> for $t {
             type Output =  mpfi_t;
 
-            // #[inline]
             fn $s2(self, rhs: mpfi_t) -> Self::Output {
                 let mut tmp: mpfi_t = mpfi_t::new();
                 unsafe {
-                    mpfi::$s3(&mut tmp.0, self, &rhs.0);
+                    mpfi::$s3(&mut tmp, self, &rhs);
                 }
                 return tmp;
             }
@@ -368,11 +335,10 @@ macro_rules! op4_impl {
         impl std::ops::$s1<mpfi_t> for $t {
             type Output =  mpfi_t;
 
-            // #[inline]
             fn $s2(self, rhs: mpfi_t) -> Self::Output {
                 let mut tmp: mpfi_t = mpfi_t::new();
                 unsafe {
-                    mpfi::$s3(&mut tmp.0, &rhs.0, self);
+                    mpfi::$s3(&mut tmp, &rhs, self);
                 }
                 return tmp;
             }
@@ -380,10 +346,10 @@ macro_rules! op4_impl {
     )*)
 }
 
-op1_impl! { Add add mpfi_add | mpfi_t }
-op1_impl! { Sub sub mpfi_sub | mpfi_t }
-op1_impl! { Mul mul mpfi_mul | mpfi_t }
-op1_impl! { Div div mpfi_div | mpfi_t }
+op2_impl! { Add add mpfi_add | mpfi_srcptr }
+op2_impl! { Sub sub mpfi_sub | mpfi_srcptr }
+op2_impl! { Mul mul mpfi_mul | mpfi_srcptr }
+op2_impl! { Div div mpfi_div | mpfi_srcptr }
 
 op2_impl! { Add add mpfi_add_d | f64 }
 op4_impl! { Add add mpfi_add_d | f64 }
@@ -419,7 +385,7 @@ impl std::ops::Neg for mpfi_t {
     fn neg(self) -> Self::Output {
         let mut tmp: mpfi_t = mpfi_t::new();
         unsafe {
-            mpfi::mpfi_neg(&mut tmp.0, &self.0);
+            mpfi::mpfi_neg(&mut tmp, &self);
         }
         return tmp;
     }
@@ -428,11 +394,46 @@ impl std::ops::Neg for mpfi_t {
 
 pub fn swap(x: &mut mpfi_t, y: &mut mpfi_t) {
     unsafe {
-        mpfi::mpfi_swap(&mut (*x).0, &mut (*y).0);
+        mpfi::mpfi_swap(x, y);
     }
 }
 
-fn0_const!{ const_log2      mpfi_const_log2     }
-fn0_const!{ const_pi        mpfi_const_pi       }
-fn0_const!{ const_euler     mpfi_const_euler    }
-fn0_const!{ const_catalan   mpfi_const_catalan  }
+fn0_const! { const_log2      mpfi_const_log2     }
+fn0_const! { const_pi        mpfi_const_pi       }
+fn0_const! { const_euler     mpfi_const_euler    }
+fn0_const! { const_catalan   mpfi_const_catalan  }
+
+fn1_ex! { is_strictly_inside mpfi_is_strictly_inside | mpfi_srcptr   | i32   }
+fn1_ex! { is_inside          mpfi_is_inside          | mpfi_srcptr   | i32   }
+fn1_ex! { is_inside_d        mpfi_is_inside_d        | f64           | i32   }
+fn1_ex! { is_inside_ui       mpfi_is_inside_ui       | u64           | i32   }
+fn1_ex! { is_inside_si       mpfi_is_inside_si       | i64           | i32   }
+fn1_ex! { is_inside_fr       mpfi_is_inside_fr       | mpfr_srcptr   | i32   }
+
+pub fn error() -> i32 {
+    let mut tmp: i32 = 0;
+    unsafe {
+        tmp = mpfi::mpfi_error();
+    }
+    return tmp;
+}
+
+pub fn reset_error() {
+    unsafe {
+        mpfi::mpfi_reset_error();
+    }
+}
+
+pub fn set_error(x: i32) {
+    unsafe {
+        mpfi::mpfi_set_error(x);
+    }
+}
+
+pub fn is_error() -> i32 {
+    let mut tmp: i32 = 0;
+    unsafe {
+        tmp = mpfi::mpfi_is_error();
+    }
+    return tmp;
+}
