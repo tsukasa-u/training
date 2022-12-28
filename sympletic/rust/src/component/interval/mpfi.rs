@@ -3,7 +3,7 @@
 use super::gmp::gmp_randstate_t;
 use super::gmp::mpq_srcptr;
 use super::gmp::mpz_srcptr;
-use super::mpfr::__mpfr_struct;
+use super::mpfr::mpfr_t;
 use super::mpfr::mpfr_ptr;
 use super::mpfr::mpfr_srcptr;
 
@@ -19,8 +19,8 @@ use std::ffi::c_ulonglong;
 
 #[repr(C)]
 pub struct __mpfi_struct {
-    pub left: __mpfr_struct,
-    pub right: __mpfr_struct
+    pub left: mpfr_t,
+    pub right: mpfr_t
 }
 
 pub type mpfi_ptr = *mut __mpfi_struct;
