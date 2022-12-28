@@ -45,6 +45,21 @@ pub struct __mpfr_struct {
     pub _mpfr_exp : mpfr_exp_t,
     pub _mpfr_d : *mut mp_limb_t,
 }
+
+pub type mpfr_t = __mpfr_struct;
+
+impl mpfr_t {
+    pub fn new() -> Self {
+        return Self {
+            _mpfr_prec : 0,
+            _mpfr_sign : 0,
+            _mpfr_exp :  0,
+            _mpfr_d :  0 as *mut mp_limb_t
+        };
+    }
+}
+
+
 /* Compatibility with previous types of MPFR */
 
 
