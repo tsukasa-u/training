@@ -10,8 +10,15 @@ use super::mpfr::mpfr_t;
 use super::mpfi::__mpfi_struct;
 use super::*;
 
+use std::ffi::c_void;
+use std::ffi::c_long;
+use std::ffi::c_int;
 use std::ffi::c_ulong;
+use std::ffi::c_double;
+use std::ffi::c_float;
 use std::ffi::c_char;
+use std::ffi::c_longlong;
+use std::ffi::c_ulonglong;
 
 pub type mpfi_t = __mpfi_struct;
 
@@ -210,10 +217,10 @@ macro_rules! fn5_impl {
 }
 
 fn2_impl! {set      mpfi_set    | mpfi_srcptr   | i32   }
-fn2_impl! {set_si   mpfi_set_si     | i64   | i32   }
-fn2_impl! {set_ui   mpfi_set_ui     | u64   | i32   }
-fn2_impl! {set_d    mpfi_set_d      | f64   | i32   }
-fn2_impl! {set_flt  mpfi_set_flt    | f32   | i32   }
+fn2_impl! {set_si   mpfi_set_si     | c_long    | i32   }
+fn2_impl! {set_ui   mpfi_set_ui     | c_ulong   | i32   }
+fn2_impl! {set_d    mpfi_set_d      | c_double  | i32   }
+fn2_impl! {set_flt  mpfi_set_flt    | c_float   | i32   }
 fn2_impl! {set_fr   mpfi_set_fr     | mpfr_srcptr   | i32   }
 
 fn0_impl! { sqr     mpfi_sqr    |   | mpfi_t    }
@@ -224,12 +231,12 @@ fn0_impl! { abs     mpfi_abs    |   | mpfi_t    }
 
 fn0_impl! { rec_sqrt    mpfi_rec_sqrt   |   | mpfi_t    }
 
-fn1_impl! { mul_2exp    mpfi_mul_2exp   | u64   | mpfi_t    }
-fn1_impl! { mul_2ui     mpfi_mul_2ui    | u64   | mpfi_t    }
-fn1_impl! { mul_2si     mpfi_mul_2si    | i64   | mpfi_t    }
-fn1_impl! { div_2exp    mpfi_div_2exp   | u64   | mpfi_t    }
-fn1_impl! { div_2ui     mpfi_div_2ui    | u64   | mpfi_t    }
-fn1_impl! { div_2si    mpfi_div_2si     | i64   | mpfi_t    }
+fn1_impl! { mul_2exp    mpfi_mul_2exp   | c_ulong   | mpfi_t    }
+fn1_impl! { mul_2ui     mpfi_mul_2ui    | c_ulong   | mpfi_t    }
+fn1_impl! { mul_2si     mpfi_mul_2si    | c_long    | mpfi_t    }
+fn1_impl! { div_2exp    mpfi_div_2exp   | c_ulong   | mpfi_t    }
+fn1_impl! { div_2ui     mpfi_div_2ui    | c_ulong   | mpfi_t    }
+fn1_impl! { div_2si    mpfi_div_2si     | c_long    | mpfi_t    }
 
 fn0_impl! { log     mpfi_log    |   | mpfi_t    }
 fn0_impl! { exp     mpfi_exp    |   | mpfi_t    }
@@ -261,9 +268,9 @@ fn1_impl! { hypot   mpfi_hypot  | mpfi_srcptr   | mpfi_t    }
 
 fn4_impl! { cmp     mpfi_cmp        | mpfi_srcptr   | i32   }
 
-fn4_impl! { cmp_d   mpfi_cmp_d      | f64   | i32   }
-fn4_impl! { cmp_ui  mpfi_cmp_ui     | u64   | i32   }
-fn4_impl! { cmp_si  mpfi_cmp_si     | i64   | i32   }
+fn4_impl! { cmp_d   mpfi_cmp_d      | c_double   | i32   }
+fn4_impl! { cmp_ui  mpfi_cmp_ui     | c_ulong   | i32   }
+fn4_impl! { cmp_si  mpfi_cmp_si     | c_long   | i32   }
 
 fn5_impl! { pos     mpfi_is_pos     |   | i32   }
 fn5_impl! { nonneg  mpfi_is_nonneg  |   | i32   }
@@ -284,14 +291,14 @@ fn0_impl! { get_left    mpfi_get_left   |   | mpfr_t    }
 fn0_impl! { get_right   mpfi_get_right  |   | mpfr_t    }
 
 fn2_impl! { put     mpfi_put    | mpfi_srcptr   | i32   }
-fn2_impl! { put_si  mpfi_put_si     | i64   | i32   }
-fn2_impl! { put_ui  mpfi_put_ui     | u64   | i32   }
-fn2_impl! { put_d   mpfi_put_d      | f64   | i32   }
+fn2_impl! { put_si  mpfi_put_si     | c_long    | i32   }
+fn2_impl! { put_ui  mpfi_put_ui     | c_ulong   | i32   }
+fn2_impl! { put_d   mpfi_put_d      | c_double  | i32   }
 fn2_impl! { put_fr  mpfi_put_fr     | mpfr_srcptr   | i32   }
 
-fn2_impl! { interv_si   mpfi_interv_si  | i64, i64    | i32   }
-fn2_impl! { interv_ui   mpfi_interv_ui  | u64, u64    | i32   }
-fn2_impl! { interv_d    mpfi_interv_d   | f64, f64    | i32   }
+fn2_impl! { interv_si   mpfi_interv_si  | c_long,   c_long      | i32   }
+fn2_impl! { interv_ui   mpfi_interv_ui  | c_ulong,  c_ulong     | i32   }
+fn2_impl! { interv_d    mpfi_interv_d   | c_double, c_double    | i32   }
 fn2_impl! { interv_fr   mpfi_interv_fr  | mpfr_srcptr, mpfr_srcptr    | i32   }
 
 fn5_impl! { is_empty    mpfi_is_empty   |   | i32   }
@@ -351,32 +358,32 @@ op2_impl! { Sub sub mpfi_sub | mpfi_srcptr }
 op2_impl! { Mul mul mpfi_mul | mpfi_srcptr }
 op2_impl! { Div div mpfi_div | mpfi_srcptr }
 
-op2_impl! { Add add mpfi_add_d | f64 }
-op4_impl! { Add add mpfi_add_d | f64 }
-op2_impl! { Sub sub mpfi_sub_d | f64 }
-op3_impl! { Sub sub mpfi_d_sub | f64 }
-op2_impl! { Mul mul mpfi_mul_d | f64 }
-op4_impl! { Mul mul mpfi_mul_d | f64 }
-op2_impl! { Div div mpfi_div_d | f64 }
-op3_impl! { Div div mpfi_d_div | f64 }
+op2_impl! { Add add mpfi_add_d | c_double }
+op4_impl! { Add add mpfi_add_d | c_double }
+op2_impl! { Sub sub mpfi_sub_d | c_double }
+op3_impl! { Sub sub mpfi_d_sub | c_double }
+op2_impl! { Mul mul mpfi_mul_d | c_double }
+op4_impl! { Mul mul mpfi_mul_d | c_double }
+op2_impl! { Div div mpfi_div_d | c_double }
+op3_impl! { Div div mpfi_d_div | c_double }
 
-op2_impl! { Add add mpfi_add_ui | u64 }
-op4_impl! { Add add mpfi_add_ui | u64 }
-op2_impl! { Sub sub mpfi_sub_ui | u64 }
-op3_impl! { Sub sub mpfi_ui_sub | u64 }
-op2_impl! { Mul mul mpfi_mul_ui | u64 }
-op4_impl! { Mul mul mpfi_mul_ui | u64 }
-op2_impl! { Div div mpfi_div_ui | u64 }
-op3_impl! { Div div mpfi_ui_div | u64 }
+op2_impl! { Add add mpfi_add_ui | c_ulong }
+op4_impl! { Add add mpfi_add_ui | c_ulong }
+op2_impl! { Sub sub mpfi_sub_ui | c_ulong }
+op3_impl! { Sub sub mpfi_ui_sub | c_ulong }
+op2_impl! { Mul mul mpfi_mul_ui | c_ulong }
+op4_impl! { Mul mul mpfi_mul_ui | c_ulong }
+op2_impl! { Div div mpfi_div_ui | c_ulong }
+op3_impl! { Div div mpfi_ui_div | c_ulong }
 
-op2_impl! { Add add mpfi_add_si | i64 }
-op4_impl! { Add add mpfi_add_si | i64 }
-op2_impl! { Sub sub mpfi_sub_si | i64 }
-op3_impl! { Sub sub mpfi_si_sub | i64 }
-op2_impl! { Mul mul mpfi_mul_si | i64 }
-op4_impl! { Mul mul mpfi_mul_si | i64 }
-op2_impl! { Div div mpfi_div_si | i64 }
-op3_impl! { Div div mpfi_si_div | i64 }
+op2_impl! { Add add mpfi_add_si | c_long }
+op4_impl! { Add add mpfi_add_si | c_long }
+op2_impl! { Sub sub mpfi_sub_si | c_long }
+op3_impl! { Sub sub mpfi_si_sub | c_long }
+op2_impl! { Mul mul mpfi_mul_si | c_long }
+op4_impl! { Mul mul mpfi_mul_si | c_long }
+op2_impl! { Div div mpfi_div_si | c_long }
+op3_impl! { Div div mpfi_si_div | c_long }
 
 // concat_idents!(mpfi, )
 
@@ -405,9 +412,9 @@ fn0_const! { const_catalan   mpfi_const_catalan  }
 
 fn1_ex! { is_strictly_inside mpfi_is_strictly_inside | mpfi_srcptr   | i32   }
 fn1_ex! { is_inside          mpfi_is_inside          | mpfi_srcptr   | i32   }
-fn1_ex! { is_inside_d        mpfi_is_inside_d        | f64           | i32   }
-fn1_ex! { is_inside_ui       mpfi_is_inside_ui       | u64           | i32   }
-fn1_ex! { is_inside_si       mpfi_is_inside_si       | i64           | i32   }
+fn1_ex! { is_inside_d        mpfi_is_inside_d        | c_double      | i32   }
+fn1_ex! { is_inside_ui       mpfi_is_inside_ui       | c_ulong       | i32   }
+fn1_ex! { is_inside_si       mpfi_is_inside_si       | c_long        | i32   }
 fn1_ex! { is_inside_fr       mpfi_is_inside_fr       | mpfr_srcptr   | i32   }
 
 pub fn error() -> i32 {
