@@ -8,5 +8,5 @@ mod gmp;
 // #[cfg(target_os="linux")]
 mod mpfr;
 
-// #[cfg(target_os="linux")]
+#[cfg(target_os="linux")]
 mod mpfi;
