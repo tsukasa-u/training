@@ -39,6 +39,7 @@ type mpfr_exp_t = c_long;
 type mpfr_uexp_t = c_ulong;
 
 /* Definition of the main structure */
+#[derive(Copy, Clone, Debug)]
 #[repr(C)]
 pub struct __mpfr_struct {
     pub _mpfr_prec: mpfr_prec_t,
@@ -51,12 +52,13 @@ pub type mpfr_t = __mpfr_struct;
 
 impl mpfr_t {
     pub fn new() -> Self {
-        return Self {
+        let tmp: mpfr_t =  Self {
             _mpfr_prec : 0,
             _mpfr_sign : 0,
             _mpfr_exp :  0,
-            _mpfr_d :  0 as *mut mp_limb_t
+            _mpfr_d : 0 as  *mut mp_limb_t
         };
+        return tmp;
     }
 }
 
@@ -108,7 +110,7 @@ extern {
 }
 
 impl mpfr_t {
-    pub fn mpfr_get_exp(&self) -> mpfr_exp_t {
+    pub fn get_exp(&self) -> mpfr_exp_t {
         let mut ret: mpfr_exp_t = 0;
         unsafe {
             ret = mpfr_get_exp(self);
@@ -116,7 +118,7 @@ impl mpfr_t {
         return ret;
     }
 
-    pub fn mpfr_set_exp(&mut self, a: mpfr_exp_t) -> i32 {
+    pub fn set_exp(&mut self, a: mpfr_exp_t) -> i32 {
         let mut ret: i32 = 0;
         unsafe {
             ret = mpfr_set_exp(self, a);
@@ -124,7 +126,7 @@ impl mpfr_t {
         return ret;
     }
     
-    pub fn mpfr_get_prec(&self) -> mpfr_prec_t {
+    pub fn get_prec(&self) -> mpfr_prec_t {
         let mut ret: mpfr_prec_t = 0;
         unsafe {
             ret = mpfr_get_prec(self);
@@ -132,13 +134,13 @@ impl mpfr_t {
         return ret;
     }
     
-    pub fn mpfr_set_prec(&mut self, a: mpfr_prec_t) {
+    pub fn set_prec(&mut self, a: mpfr_prec_t) {
         unsafe {
             mpfr_set_prec(self, a);
         }
     }
     
-    pub fn mpfr_get_flt(&self, rnd: mpfr_rnd_t) -> c_float {
+    pub fn get_flt(&self, rnd: mpfr_rnd_t) -> c_float {
         let mut ret: c_float = 0.0;
         unsafe {
             ret = mpfr_get_flt(self, rnd);
@@ -146,7 +148,7 @@ impl mpfr_t {
         return ret;
     }
     
-    pub fn mpfr_get_d(&self, rnd: mpfr_rnd_t) -> c_double {
+    pub fn get_d(&self, rnd: mpfr_rnd_t) -> c_double {
         let mut ret: c_double = 0.0;
         unsafe {
             ret = mpfr_get_d(self, rnd);
@@ -154,7 +156,7 @@ impl mpfr_t {
         return ret;
     }
 
-    pub fn mpfr_get_d1(&self) -> c_double {
+    pub fn get_d1(&self) -> c_double {
         let mut ret: c_double = 0.0;
         unsafe {
             ret = mpfr_get_d1(self);
@@ -162,7 +164,7 @@ impl mpfr_t {
         return ret;
     }
     
-    pub fn mpfr_get_d_2exp(&self, y: *mut c_long, rnd: mpfr_rnd_t) -> c_double {
+    pub fn get_d_2exp(&self, y: *mut c_long, rnd: mpfr_rnd_t) -> c_double {
         let mut ret: c_double = 0.0;
         unsafe {
             ret = mpfr_get_d_2exp(y,self,  rnd);
@@ -170,7 +172,7 @@ impl mpfr_t {
         return ret;
     }
     
-    pub fn mpfr_frexp(&self, y: *mut mpfr_exp_t, rnd: mpfr_rnd_t) -> c_long {
+    pub fn frexp(&self, y: *mut mpfr_exp_t, rnd: mpfr_rnd_t) -> c_long {
         let mut ret: c_long = 0;
         unsafe {
             ret = mpfr_frexp(y,self,  rnd);
@@ -178,7 +180,7 @@ impl mpfr_t {
         return ret;
     }
     
-    pub fn mpfr_get_si(&self, rnd: mpfr_rnd_t) -> c_long {
+    pub fn get_si(&self, rnd: mpfr_rnd_t) -> c_long {
         let mut ret: c_long = 0;
         unsafe {
             ret = mpfr_get_si(self, rnd);
@@ -186,7 +188,7 @@ impl mpfr_t {
         return ret;
     }
     
-    pub fn mpfr_get_ui(&self, rnd: mpfr_rnd_t) -> c_ulong {
+    pub fn get_ui(&self, rnd: mpfr_rnd_t) -> c_ulong {
         let mut ret: c_ulong = 0;
         unsafe {
             ret = mpfr_get_ui(self, rnd);
