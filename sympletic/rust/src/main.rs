@@ -1,10 +1,10 @@
+#![allow(dead_code, unused_imports, non_snake_case)]
+
 
 mod component;
 
-#[allow(unused_imports)]
 use component::{VecL::Vec3, VecL::VecL, Julian, PhyQty};
 
-#[allow(non_snake_case)]
 mod Moon;
 
 mod c_kernel;
@@ -15,12 +15,10 @@ use c_kernel::cspice;
 static INSTANCE_C: once_cell::sync::OnceCell<Vec<f64>> =  once_cell::sync::OnceCell::new();
 static INSTANCE_D: once_cell::sync::OnceCell<Vec<f64>> =  once_cell::sync::OnceCell::new();
 
-#[allow(dead_code)]
 const PHY_G:f64 = 6.67430E-11;
 
 mod tester;
 
-#[allow(dead_code)]
 fn record_orbit(_t: f64, h: f64, interval:f64, satelite: &mut PhyQty::mxvr, _obj: &mut Vec<PhyQty::mxvr>, recoder: &mut Vec<[f32; 10]>) {
     if _t%interval < h {
         let mut ret:[f32;10] = [0.0; 10];
@@ -41,7 +39,6 @@ fn record_orbit(_t: f64, h: f64, interval:f64, satelite: &mut PhyQty::mxvr, _obj
     }
 }
 
-#[allow(dead_code)]
 fn update_orbit(_t: f64, _obj:&mut Vec<PhyQty::mxvr>) {
     for key in _obj {
         match (*key).get_name().as_str() {
@@ -60,15 +57,11 @@ fn update_orbit(_t: f64, _obj:&mut Vec<PhyQty::mxvr>) {
     }
 }
 
-#[allow(dead_code)]
-#[allow(non_snake_case)]
 fn Tp(satelite:&PhyQty::mxvr) -> Vec3::Vec3<f64> {
     // println!("{:?}", (*satelite).get_mass());
     return (*satelite).get_v();
 }
 
-#[allow(dead_code)]
-#[allow(non_snake_case)]
 fn Vq(satelite:&PhyQty::mxvr, obj:&Vec<PhyQty::mxvr>) -> Vec3::Vec3<f64> {
     let mut ret:Vec3::Vec3<f64> = Vec3::Vec3([0.0, 0.0, 0.0]);
 
@@ -81,7 +74,6 @@ fn Vq(satelite:&PhyQty::mxvr, obj:&Vec<PhyQty::mxvr>) -> Vec3::Vec3<f64> {
     return ret*PHY_G;
 }
 
-#[allow(dead_code)]
 fn sympletic4(h:f64, start:f64, end:f64, satelite:&mut PhyQty::mxvr, obj:&mut Vec<PhyQty::mxvr>, recoder: &mut Vec<[f32; 10]>) {
 
     let c: &Vec<f64> = INSTANCE_C.get().unwrap();
@@ -125,47 +117,47 @@ fn main() {
 
     tester::tester();
 
-    let c:Vec<f64> = vec![
-        1.0/2.0/(2.0 - f64::powf(2.0, 1.0/3.0)),
-        (1.0 - f64::powf(2.0, 1.0/3.0))/2.0/(2.0 - f64::powf(2.0, 1.0/3.0)),
-        1.0/2.0/(2.0 - f64::powf(2.0, 1.0/3.0)),
-        (1.0 - f64::powf(2.0, 1.0/3.0))/2.0/(2.0 - f64::powf(2.0, 1.0/3.0))
-    ];
-    let d:Vec<f64> = vec![
-        1.0/(2.0 - f64::powf(2.0, 1.0/3.0)),
-        -f64::powf(2.0, 1.0/3.0)/(2.0 - f64::powf(2.0, 1.0/3.0)),
-        1.0/(2.0 - f64::powf(2.0, 1.0/3.0)),
-        0.0
-    ];
+    // let c:Vec<f64> = vec![
+    //     1.0/2.0/(2.0 - f64::powf(2.0, 1.0/3.0)),
+    //     (1.0 - f64::powf(2.0, 1.0/3.0))/2.0/(2.0 - f64::powf(2.0, 1.0/3.0)),
+    //     1.0/2.0/(2.0 - f64::powf(2.0, 1.0/3.0)),
+    //     (1.0 - f64::powf(2.0, 1.0/3.0))/2.0/(2.0 - f64::powf(2.0, 1.0/3.0))
+    // ];
+    // let d:Vec<f64> = vec![
+    //     1.0/(2.0 - f64::powf(2.0, 1.0/3.0)),
+    //     -f64::powf(2.0, 1.0/3.0)/(2.0 - f64::powf(2.0, 1.0/3.0)),
+    //     1.0/(2.0 - f64::powf(2.0, 1.0/3.0)),
+    //     0.0
+    // ];
 
-    INSTANCE_C.set(c).unwrap();
-    INSTANCE_D.set(d).unwrap();
+    // INSTANCE_C.set(c).unwrap();
+    // INSTANCE_D.set(d).unwrap();
 
-    // let mut pos :[f64;3] = [0.0, 0.0, 0.0];
-    // let mut _pos :[f64;3] = [0.0, 0.0, 0.0];
-    // let mut data:Vec<[f64;4]> = Vec::with_capacity(1000000);
+    // // let mut pos :[f64;3] = [0.0, 0.0, 0.0];
+    // // let mut _pos :[f64;3] = [0.0, 0.0, 0.0];
+    // // let mut data:Vec<[f64;4]> = Vec::with_capacity(1000000);
 
-    let mut satelite: PhyQty::mxvr = PhyQty::mxvr {
-        name: String::from("SATELITE"),
-        m: 50.0,
-        x: Vec3::Vec3([6500.0*1000.0, 0.0, 0.0]),
-        v: Vec3::Vec3([0.0, 1000.0, 0.0]),
-        r:0.25
-    };
-    let mut objects:Vec<PhyQty::mxvr> = Vec::new();
-    objects.push(PhyQty::mxvr { name: String::from("EARTH"), m:       0.07346*f64::powf(10.0, 24.0), x: Vec3::Vec3::new(), v: Vec3::Vec3::new(), r:  6371.0*1000.0 });
-    objects.push(PhyQty::mxvr { name: String::from("MOON") , m:       5.9724 *f64::powf(10.0, 24.0), x: Vec3::Vec3::new(), v: Vec3::Vec3::new(), r:  1737.4*1000.0 });
-    objects.push(PhyQty::mxvr { name: String::from("SUN")  , m: 1988500.0    *f64::powf(10.0, 24.0), x: Vec3::Vec3::new(), v: Vec3::Vec3::new(), r:695700.0*1000.0 });
-    let mut recorder: Vec<[f32; 10]> = Vec::with_capacity(100000);
+    // let mut satelite: PhyQty::mxvr = PhyQty::mxvr {
+    //     name: String::from("SATELITE"),
+    //     m: 50.0,
+    //     x: Vec3::Vec3([6500.0*1000.0, 0.0, 0.0]),
+    //     v: Vec3::Vec3([0.0, 1000.0, 0.0]),
+    //     r:0.25
+    // };
+    // let mut objects:Vec<PhyQty::mxvr> = Vec::new();
+    // objects.push(PhyQty::mxvr { name: String::from("EARTH"), m:       0.07346*f64::powf(10.0, 24.0), x: Vec3::Vec3::new(), v: Vec3::Vec3::new(), r:  6371.0*1000.0 });
+    // objects.push(PhyQty::mxvr { name: String::from("MOON") , m:       5.9724 *f64::powf(10.0, 24.0), x: Vec3::Vec3::new(), v: Vec3::Vec3::new(), r:  1737.4*1000.0 });
+    // objects.push(PhyQty::mxvr { name: String::from("SUN")  , m: 1988500.0    *f64::powf(10.0, 24.0), x: Vec3::Vec3::new(), v: Vec3::Vec3::new(), r:695700.0*1000.0 });
+    // let mut recorder: Vec<[f32; 10]> = Vec::with_capacity(100000);
 
-    cspice::call_furnsh_c();
+    // cspice::call_furnsh_c();
 
-    sympletic4(0.1, 0.0, 100000.0, &mut satelite, &mut objects, &mut recorder);
+    // sympletic4(0.1, 0.0, 100000.0, &mut satelite, &mut objects, &mut recorder);
 
 
-    if let Err(err) = csv_writer(&recorder) {
-        println!("{}", err);
-        std::process::exit(1);
-    }
+    // if let Err(err) = csv_writer(&recorder) {
+    //     println!("{}", err);
+    //     std::process::exit(1);
+    // }
 
 }
