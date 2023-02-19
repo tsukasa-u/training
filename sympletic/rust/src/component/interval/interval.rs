@@ -444,3 +444,13 @@ pub fn is_error() -> i32 {
     }
     return tmp;
 }
+
+// impl Drop for mpfi_t {
+//     fn drop(&mut self) {
+//         unsafe {
+//             mpfi::mpfi_clear(self);
+//         }
+//     }
+// }
+
+// impl Copy for mpfi_t {}
