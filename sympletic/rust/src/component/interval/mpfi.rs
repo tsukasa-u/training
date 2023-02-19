@@ -17,6 +17,8 @@ use std::ffi::c_char;
 use std::ffi::c_longlong;
 use std::ffi::c_ulonglong;
 
+#[derive(Clone)]
+#[derive(Debug)]
 #[repr(C)]
 pub struct __mpfi_struct {
     pub left: mpfr_t,
@@ -283,6 +285,7 @@ extern {
 
     /* get left or right bound of the interval defined by the
     second argument and put the result in the first one */
+    // DO NOT USE mpfi_get_left and mpfi_get_right
     pub fn mpfi_get_left    (b: mpfr_ptr, a: mpfi_srcptr)   -> c_int;
     pub fn mpfi_get_right   (b: mpfr_ptr, a: mpfi_srcptr)   -> c_int;
 
