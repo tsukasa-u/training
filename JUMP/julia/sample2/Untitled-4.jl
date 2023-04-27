@@ -281,17 +281,21 @@ function solve_NLP(
         nx::Int,
         nu::Int,
         n::Array{Int, 1}, 
-        x::Tuple{Array{Real, 2}}, 
-        constraints_x::Tuple{Array{Real, 2}},
-        u::Tuple{Array{Real, 2}}, 
-        constraints_u::Tuple{Array{Real, 2}},
-        f::Tuple{Function}
+        x::Array{Array{Real, 2}, 1}, 
+        constraints_x::Array{Array{(Real, Real), 2}, 1},
+        u::Array{Array{Real, 2}, 1}, 
+        constraints_u::Array{Array{(Real, Real), 2}, 1},
+        bound_x::Array{(Real, Real), 1},
+        bound_u::Array{(Real, Real), 1},
+        constraints_eq::Tuple{(Function, Tuple{Real})},
+        constraints_le::Tuple{(Function, Tuple{Real})},
+        f::Tuple{Function},
         τ::Tuple{Array{Real, 1}},
         t0::Array{Real, 1},
         tf::Array{Real, 1},
         D::Tuple{Array{Real, 2}},
         W::Tuple{Array{Real, 1}}
-    )::(Tuple{Array{Real, 2}}, Tuple{Array{Real, 2}}, Tuple{Array{Real, 2}})
+    )::(Array{{Array{Real, 2}}, 1}, Array{Array{Real, 2}, 1}, Array{Array{Real, 2}, 1}, Array{Array{Real, 2}, 1})
         # n = 64    # Time steps
         T = 0.1405
         m_p = 0.0749
@@ -309,10 +313,13 @@ function solve_NLP(
         rocket = Model(NLopt.Optimizer)
         set_optimizer_attribute(rocket, "algorithm", :LD_SLSQP)
 
-        @variables( rocket, constraints_x[1][i][j, k] ≥ _x[i = 1:ns][j = 1:nx, k = 1:(n[i] + 1)] ≥ constraints_x[0][i][j, k] )
-        @variables( rocket, constraints_u[1][i][j, k] ≥ _u[i = 1:ns][j = 1:nu, k = 1:(n[i] + 1)] ≥ constraints_u[0][i][j, k] )
+        @variables( rocket, constraints_x[i][j, k][1] ≥ _x[i = 1:ns][j = 1:nx, k = 1:(n[i] + 1)] ≥ constraints_x[i][j, k][0] , start = x[i][j, k])
+        @variables( rocket, constraints_u[i][j, k][1] ≥ _u[i = 1:ns][j = 1:nu, k = 1:(n[i] + 1)] ≥ constraints_u[i][j, k][0] , start = u[i][j, k])
 
         @NLobjective(rocket, Max, _x[ns][0, n + 1])
+
+
+        # register(rocket, :f$i$, )
 
         @NLexpressions(
             rocket,
@@ -325,30 +332,55 @@ function solve_NLP(
             end
         );
 
-        @NLconstraint(rocket, Dx[i = 1:ns][j = 1:nx, k = 1:(n[i] + 1)] == T_2[i]*fx[i][j, k])
+        @NLconstraint(rocket, con1[i = 1:ns][j = 1:nx, k = 1:(n[i] + 1)], Dx[i][j, k] == T_2[i]*fx[i][j, k])
 
         if (ns >= 1)
-            @NLconstraint(rocket, _x[ns][j = 1:nx, n[i] + 1] - _x[ns][j = 1:nx, 1] == wDx[ns][j])
+            @NLconstraint(rocket,con2[1][j = 1:nx],  _x[ns][j, n[i] + 1] - _x[ns][j, 1] == wDx[ns][j])
             if (ns > 1)
-                @NLconstraint(rocket, _x[i = 1:ns][j = 1:nx, 1] - _x[i = 1:(ns - 1)][j = 1:nx, 1] == wDx[i][j])
+                @NLconstraint(rocket, con2[i = 2:ns][j = 1:nx], _x[i][j, 1] - _x[i - 1][j, 1] == wDx[i][j])
             end
         end
 
-        @NLconstraint(rocket, v[n + 1] == 1/sqrt(r[n + 1]))
+        for (j, ele_f) in enumerate(constraints_eq)
+            @NLconstraint(rocket, conx[j], ele_f[1](_x, _u, ele_f[2]) == 0)
+        end
 
-        fix(r[1], 1.0; force = true)
-        fix(θ[1], 0.0; force = true)
-        fix(u[1], 0.0; force = true)
-        fix(v[1], 1.0; force = true)
-        fix(γ[1], 0.001; force = true)
-        fix(u[n + 1], 0.0; force = true)
+        for (j, ele_f) in enumerate(constraints_le)
+            @NLconstraint(rocket, conu[j], ele_f[1](_x, _u, ele_f[2]) == 0)
+        end
 
-        println("Solving...")
+        for (i, ele) in enumerate(bound_x)
+            if !isnan(ele[1]) fix(_x[1][i, 1], ele[1]; force = true)
+            if !isnan(ele[2]) fix(_x[ns][i, n[ns] + 1], ele[2]; force = true)
+        end
+
+        for (i, ele) in enumerate(bound_u)
+            if !isnan(ele[1]) fix(_u[1][i, 1], ele[1]; force = true)
+            if !isnan(ele[2]) fix(_u[ns][i, n[ns] + 1], ele[2]; force = true)
+        end
+
+        # println("Solving...")
         JuMP.optimize!(rocket)
-        print(solution_summary(rocket))
+        # print(solution_summary(rocket))
 
-        println("got ", objective_value(rocket))
-        println(JuMP.value(r_f))
+        # println("got ", objective_value(rocket))
+        # println(JuMP.value(r_f))
+
+        rx = value.(_x)
+        ru = value.(_u)
+        rDx = value.(Dx)
+        rfx = value.(fx)
+
+        # delete_x = all_variables(rocket)
+        # delete(rocket, delete_x)
+        # unregister(model, :delete_x)
+
+        # delete_con = all_nonlinear_constraints(rocket)
+        # delete(rocket, delete_con)
+        # unregister(model, :delete_con)
+        
+
+        return (rx, ru, rDx, rfx)
 end
 
 
@@ -393,7 +425,7 @@ function main() {
     D = tuple(compute_D(n, -0.5, -0.5, τ[n]) in 1:50)
 
     while (true)
-        (x, dx, fx) = solve_NLP(ns, nx, nu, n, x, bx, u, bu, τ, t0, tf, D, W)
+        (x, u, dx, fx) = solve_NLP(ns, nx, nu, n, x, cx, u, cu, bx, bu, c_eq, c_le, f, τ, t0, tf, D, W)
         
         (ns, n, x, t0, tf) = refine(ns, nx, nu, n, x, u, dx, fx, τ, t0, tf, ε_tol, 0.8, W)
         if ns<0
