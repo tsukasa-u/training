@@ -1,0 +1,1 @@
+compiler ...source/object files... -lnlopt -lm -o myprogram

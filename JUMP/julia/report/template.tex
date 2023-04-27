@@ -1,0 +1,135 @@
+% keisoku_report.tex
+\documentclass[dvipdfmx]{jsarticle}
+\usepackage{listings,jlisting}  % ソースコードを行番号付きで載せるパッケージ
+\usepackage[dvipdfmx]{color}              % 色付けするパッケージ
+\usepackage[dvipdfmx]{graphicx}           % 画像を張り込むパッケージ
+\usepackage{csvsimple}
+\usepackage{subfigure}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{url}
+\usepackage{pdfpages}
+%\usepackage{secdot}
+%\usepackage{subcaption}
+
+\setlength{\topmargin}{0mm}
+\setlength{\oddsidemargin}{0mm}
+\setlength{\textwidth}{16cm}
+\setlength{\textheight}{23cm}
+
+%\sectiondot{subsection}
+
+\usepackage{ascmac}
+
+\lstdefinelanguage{Julia}%
+  {morekeywords={abstract,break,case,catch,const,continue,do,else,elseif,%
+      end,export,false,for,function,immutable,import,importall,if,in,%
+      macro,module,otherwise,quote,return,switch,true,try,type,typealias,%
+      using,while},%
+   sensitive=true,%
+   alsoother={$},%
+   morecomment=[l]\#,%
+   morecomment=[n]{\#=}{=\#},%
+   morestring=[s]{"}{"},%
+   morestring=[m]{'}{'},%
+}[keywords,comments,strings]%
+
+%\renewcommand{\lstlistingname}{リスト} % 「ソースコード」を変更する
+\lstset{language=C,% ソースの種類の指定
+        basicstyle=\footnotesize,% リスト全体の設定
+        commentstyle=\color{blue}\textit,% コメント部分の設定
+        keywordstyle=\textbf,%  C言語の予約語(if,for,while等)の設定
+        %keywordstyle=\color{red}\bfseries,%
+        classoffset=1,%
+        breakindent=20pt,%    改行時インデント量。デフォルト：20pt。
+        breaklines=true,%   行が長くなってしまった場合の改行。
+        frame=tlRB,framesep=7pt,% frame は top,left,right,bottom の1文字で指定、大文字は二重線
+        showstringspaces=false,% string 中のスペースを記号表示するか
+        numbers=left,% 行番号を付ける位置
+        %stepnumber=2,%  何行ごとに行番号を表示するか デフォルトは 1
+        numberstyle=\scriptsize\color{blue}% 行番号の表示スタイル
+        }%
+
+\begin{document}
+
+\makeatletter % プリアンブルで定義開始
+
+% 表示文字列を"図"から"Figure"へ
+%\renewcommand{\figurename}{Figure}
+
+% 図番号を"<章番号>.<図番号>" へ
+\renewcommand{\thefigure}{\thesection.\arabic{figure}}
+
+% 章が進むごとに図番号をリセットする
+\@addtoreset{figure}{section}
+
+\makeatother % プリアンブルで定義終了
+
+\centerline{
+    \huge
+    ミニレポート第二回課題
+}
+\rightline{C0SB2018 小栗秀之}
+
+リスト\ref{lst:cargo}に設定ファイル、リスト\ref{lst:rust}にソースコードを示す。
+
+\begin{lstlisting}[caption=Cargo.toml, label=lst:cargo, language=C]
+    [package]
+    name = "int_rust"
+    version = "0.1.0"
+    edition = "2021"
+    
+    [dependencies]
+    rand = "0.8.4"
+\end{lstlisting}
+
+\begin{lstlisting}[caption=mian.rs, label=lst:rust, language=C]
+    use rand::{thread_rng, Rng};
+
+    fn f(x: [f32; 10]) -> f32 {
+        return x.iter().sum::<f32>().powf(2.0);
+    }
+    
+    fn f_int( a: [(f32, f32); 10], n: i32) -> f32 {
+    
+        let mut rng = thread_rng();
+    
+        let mut sum: f32 = 0.0;
+        for _t in 0..n {
+                
+            let mut x: [f32; 10] = [0.0; 10];
+            for i in 0..10 {
+                x[i] = rng.gen_range((a[i].0)..(a[i].1));
+            }
+    
+            sum += f(x);
+        }
+        return a.iter().fold(1.0, |y, x| y*(x.1-x.0))*sum/(n as f32);
+    }
+    
+    fn main() {
+        
+        let result: f32 = f_int(
+            [
+                (0.0, 1.0),
+                (0.0, 1.0),
+                (0.0, 1.0),
+                (0.0, 1.0),
+                (0.0, 1.0),
+                (0.0, 1.0),
+                (0.0, 1.0),
+                (0.0, 1.0),
+                (0.0, 1.0),
+                (0.0, 1.0)
+            ],
+            10000000
+        );
+    
+        println!("{}", result);
+    }    
+\end{lstlisting}
+
+
+リスト\ref{lst:rust}に示したプログラムを実行した結果、積分の値は$25.821278$と計算できた。
+
+\end{document}
