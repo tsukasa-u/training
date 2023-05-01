@@ -12,9 +12,31 @@ function test()
     # a = (f, g)
     # print(a[1](1, 2))
 
-    a = (1.0, 1.0, NaN,)
-    println(a)
-    println(typeof(a))
+    # a = (1.0, 2.0, NaN,)
+    # b = ((3.0), (5.0), (7.0))
+    # println(b.+a)
+    # println(typeof(a))
+    # print(isnan.(a))
+
+    # f1(x) = x
+    # i = 1
+    # a = :f$1
+    # print()
+    # b = [1, 2, 3]
+    # a = [[1 for i in 1:5] for j in 1:2]
+    # println(typeof(a))
+    # print([ (begin
+    #     a = 1 + 1
+    #     b = a + 1
+    #     return a
+    # end) for i in 1:5])
+    # for i in 1:1
+    #     print(1)
+    # end
+
+    # a = [1 for i in 1:5, j in 1:8, k in 1:10]
+    # println(a)
+    # println(a[1, 1])
 end
 
 test()
