@@ -36,7 +36,6 @@ function compute_ε(
         W::Array{Array{Real, 1}, 1}
     )::Tuple{Array{Real, 1}, Real}
         w::Real = compute_w(ns, n, dx, x)
-        # println(typeof(dx[1]))
         return ([compute_η(n[i], dx[i], f[i], W[n[i]])/w for i in 1:ns], w)
 end
 
@@ -45,12 +44,13 @@ function check_ε_tolerance(ε_tol::Real, ns::Real, ε::Array{Array{Real, 1}, 1}
     return tmp < ε_tol ? tmp : -1
 end
 
-function select_refine_segment(ε_tol::Real, α::Real, ns::Int, ε::Array{Array{Real, 1}, 1})::Array{Int, 1}
-    ret_index::Array{Int, 1} = fill(-1, ns)
+function select_refine_segment(ε_tol::Real, α::Real, nx::Int, ε::Array{Array{Real, 1}, 1})::Array{Int, 1}
+    ret_index::Array{Int, 1} = fill(-1, nx)
     for (j, ele) in enumerate(ε)
         idx = sortperm(ele)
         sum = 0
         r = 0
+        ret_index[j] = idx[1]
         for i in idx
             if sum < α*ε_tol
                 sum += ele[i]
@@ -73,7 +73,8 @@ function compute_difficulty(n::Int, f::Array{Real, 2}, w::Array{Real, 1}, ε::Ar
 
     sum_F = sum(F_2[l] for l in 2:n)
     G_k = [(n - 1)*abs(F_2[k])/sum_F for k in 2:n]
-    return insert(G_k, 1, NaN)
+    insert!(G_k, 1, NaN)
+    return G_k
 end
 
 function convert_coefficient_n_m(
@@ -86,7 +87,7 @@ function convert_coefficient_n_m(
         τn::Array{Real, 1}, 
         τm::Array{Array{Real, 1}}, 
         tk::Array{Real, 1}
-    )::(Array{Array{Real, 2}, 1}, Array{Array{Real, 2}, 1})
+    )::Tuple{Array{Array{Real, 2}, 1}, Array{Array{Real, 2}, 1}}
         
         # xm = tuple(Tuple(Real[]))
         xm = Array{Real, 2}[]
@@ -94,37 +95,43 @@ function convert_coefficient_n_m(
         # for tk_idx in 2:length(tk)
         tk_size = size(tk, 1)
         for tk_idx in 2:tk_size
-            tau = τn[tk[tk_idx-1]:tk[tk_idx]]
+            _tk_idx = tk_idx - 1
+            _tk = tk[_tk_idx]
+            tk_ = tk[tk_idx]
+            tau = τn[_tk:tk_]
 
             if size(tau, 1) > 0
 
-                tau = tau - tau[0]
-                tau = tau*tau[end]
+                tau = tau.*(2.0/(tau[end] - tau[1]))
+                tau = tau .- (1 + tau[1])
+                # tau = tau .- tau[1]
+                # tau = tau./tau[end]
 
-                _xm = fill(0.0, (nx, m + 1))
-                _um = fill(0.0, (nx, m + 1))
+                _xm = fill(0.0, (nx, m[_tk_idx] + 1))
+                _um = fill(0.0, (nu, m[_tk_idx] + 1))
 
                 i = 1
-                for k in 2:m
-                    if τm[k] > tau[i] && τm[k] <= tau[i + 1]
-                        for (j, ele_n) in enumerate(xn)
-                            _xm[j][k] = (ele_n[i + 1] - ele_n[i])*(τm[k] - tau[i]) + tau[i]
-                        end
-                        for (j, ele_n) in enumerate(un)
-                            _um[j][k] = (ele_n[i + 1] - ele_n[i])*(τm[k] - tau[i]) + tau[i]
-                        end
-                    else
+                for k in 2:m[_tk_idx]
+                    while τm[_tk_idx][k] < tau[i]
+                        i -= 1
+                    end
+                    while !(τm[_tk_idx][k] > tau[i] && τm[_tk_idx][k] <= tau[i + 1])
                         i += 1
-                        continue
+                    end
+                    for j in 1:nx
+                        _xm[j, k] = (xn[j, _tk + i] - xn[j, _tk + i - 1])*(τm[_tk_idx][k] - tau[i]) + tau[i]
+                    end
+                    for j in 1:nu
+                        _xm[j, k] = (un[j, _tk + i] - un[j, _tk + i - 1])*(τm[_tk_idx][k] - tau[i]) + tau[i]
                     end
                 end
-                for (j, ele_n) in enumerate(xn)
-                    _xm[j][1] = ele_n[1]
-                    _xm[j][m + 1] = ele_n[n + 1]
+                for j in 1:nx
+                    _xm[j, 1] = xn[j, 1]
+                    _xm[j, m[_tk_idx] + 1] = xn[j, n + 1]
                 end
-                for (j, ele_n) in enumerate(un)
-                    _um[j][1] = ele_n[1]
-                    _um[j][m + 1] = ele_n[n + 1]
+                for j in 1:nu
+                    _um[j, 1] = un[j, 1]
+                    _um[j, m[_tk_idx] + 1] = un[j, n + 1]
                 end
                 push!(xm, _xm)
                 push!(um, _um)
@@ -141,32 +148,32 @@ function refine_segment(
         un::Array{Real, 2},
         f::Array{Real, 2}, 
         w::Array{Real}, 
-        ε::Array{real}, 
+        ε::Array{Real, 1}, 
         τ::Array{Array{Real, 1}, 1}, 
         t0::Real, 
         tf::Real, 
         g_tolerance::Real=2
-    )::(Real, Array{Real, 1}, Array{Real, 1}, Array{Real, 1}, Array{Array{Real, 2}, 1})
+    )::Tuple{Int, Array{Int, 1}, Array{Real, 1}, Array{Real, 1}, Array{Array{Real, 2}, 1}, Array{Array{Real, 2}, 1}}
         if n <= 40
-            G_k = compute_difficulty(n, f, w, ε, τ, t0, tf)
-            (max_idx, max_val) = findMax(G_k)
+            G_k = compute_difficulty(n, f, w, ε, τ[n], t0, tf)
+            (max_idx, max_val) = findmax(G_k)
             if max_val > g_tolerance  #G_k tolerance 2
                 _m = max(floor(n/3), 7)
                 t1 = (tf - t0)*(max_idx - 2) + t0
                 t2 = (tf - t0)*(max_idx    ) + t0
-                (rx, ru) = convert_coefficient_n_m(n, [_m, _m, _m], nx, nu, xn, un, τ[n], [τ[_m], τ[_m], τ[_m]], [1, max_idx - 1, max_idx + 1, n+1])
-                return (3, [_m, _m, _m], [t0, t1, t2], [t1, t2, tf], rx, ru)
+                (rx, ru) = convert_coefficient_n_m(n, Real[_m, _m, _m], nx, nu, xn, un, τ[n], Array{Real, 1}[τ[_m], τ[_m], τ[_m]], Real[1, max_idx - 1, max_idx + 1, n+1])
+                return (3, [_m, _m, _m], Real[t0, t1, t2], Real[t1, t2, tf], rx, ru)
             else
                 _m = n + 8
-                (rx, ru) = convert_coefficient_n_m(n, [_m], nx, nu, xn, un, τ[n], [τ[_m]], [1, n+1])
-                return (1, [_m], [t0], [tf], rx, ru)
+                (rx, ru) = convert_coefficient_n_m(n, Real[_m], nx, nu, xn, un, τ[n], Array{Real, 1}[τ[_m]], Real[1, n+1])
+                return (1, [_m], Real[t0], Real[tf], rx, ru)
             end
         else
             _m = floor(n/2)
             t1 = (tf - t0)*(floor(0.4*n) - 1) + t0
             t2 = (tf - t0)*(floor(0.7*n) - 1) + t0
-            (rx, ru) = convert_coefficient_n_m(n, [_m, _m, _m], nx, nu, xn, un, τ[n], [τ[_m], τ[_m], τ[_m]], [1, floor(0.4*n), floor(0.7*n), n+1])
-            return (3, [_m, _m, _m], [t0, t1, t2], [t1, t2, tf], rx, ru)
+            (rx, ru) = convert_coefficient_n_m(n, Real[_m, _m, _m], nx, nu, xn, un, τ[n], Array{Real, 1}[τ[_m], τ[_m], τ[_m]], Real[1, floor(0.4*n), floor(0.7*n), n+1])
+            return (3, [_m, _m, _m], Real[t0, t1, t2], Real[t1, t2, tf], rx, ru)
         end
 end
 
@@ -185,14 +192,12 @@ function refine(
         ε_tol::Real, 
         α::Real,
         W::Array{Array{Real, 1}, 1}
-    )::Tuple{Int , Array{Int, 1}, Array{Array{Real, 2}, 1}, Array{Real, 1}, Array{Real, 1}}
+    )::Tuple{Int , Array{Int, 1}, Array{Array{Real, 2}, 1}, Array{Array{Real, 2}, 1}, Array{Real, 1}, Array{Real, 1}}
         # εx::Array{Array{Real, 1}, 1} = Array{Real, 1}[]
         # wx::Array{Real, 1} = Real[]
         εx = Array{Real, 1}[]
         wx = Real[]
         for j in 1:nx
-            # tmp = compute_ε(ns, n, dx[:][i, :], x[:][i, :], fx[:][i, :], W)
-            # println(typeof([[dx[i][i, k] for k in 1:(n[i] + 1)] for i in 1:ns]))
             tmp = compute_ε(
                 ns, 
                 n, 
@@ -206,12 +211,10 @@ function refine(
         end
 
         if check_ε_tolerance(ε_tol, ns, εx) > 0
-            println(typeof(t0))
-            println(typeof(tf))
-            return (-ns, n, x, t0, tf)
+            return (-ns, n, x, u, t0, tf)
         end
 
-        x_idx = select_refine_segment(ε, α, ns, εx)
+        x_idx = select_refine_segment(ε_tol, α, nx, εx)
 
         rx = copy(x)
         ru = copy(u)
@@ -221,12 +224,12 @@ function refine(
         offset = 0
 
         for idx in unique(sort(x_idx))
-            delete!(rx, idx + offset)
-            delete!(ru, idx + offset)
-            delete!(rn, idx + offset)
-            delete!(rt0, idx + offset)
-            delete!(rtf, idx + offset)
-            (_len, _m, _t0, _tf, segx, segu) = refine_segment(n[idx], nx, nu, x[idx], u[idx], fx[idx], wx, εx, τ, t0[idx], tf[idx])
+            deleteat!(rx, idx + offset)
+            deleteat!(ru, idx + offset)
+            deleteat!(rn, idx + offset)
+            deleteat!(rt0, idx + offset)
+            deleteat!(rtf, idx + offset)
+            (_len, _m, _t0, _tf, segx, segu) = refine_segment(n[idx], nx, nu, x[idx], u[idx], fx[idx], wx, εx[:][idx], τ, t0[idx], tf[idx])
             for i in _len:1
                 insert!(rx, idx + offset, segx[i])
                 insert!(ru, idx + offset, segu[i])
@@ -317,9 +320,9 @@ function solve_NLP(
         na::Int,
         n::Array{Int, 1}, 
         x::Array{Array{Real, 2}, 1}, 
-        constraints_x::Array{Array{Tuple{Real, Real}, 2}, 1},
+        constraints_x::Array{Tuple{Real, Real}, 1},
         u::Array{Array{Real, 2}, 1}, 
-        constraints_u::Array{Array{Tuple{Real, Real}, 2}, 1},
+        constraints_u::Array{Tuple{Real, Real}, 1},
         bound_x::Array{Tuple{Real, Real}, 1},
         bound_u::Array{Tuple{Real, Real}, 1},
         constraints_eq::Array{Tuple{Function, Array{Real, 1}}},
@@ -332,19 +335,6 @@ function solve_NLP(
         D::Array{Array{Real, 2}},
         W::Array{Array{Real, 1}}
     )::Tuple{Array{Array{Real, 2}, 1}, Array{Array{Real, 2}, 1}, Array{Array{Real, 2}, 1}, Array{Array{Real, 2}, 1}}
-        # n = 64    # Time steps
-        # T = 0.1405
-        # m_p = 0.0749
-
-        # alpha = -0.5
-        # beta = -0.5
-
-        # tau = compute_tau(n)
-        # D = compute_D(n, alpha, beta, tau)
-        # t_f = 3.32
-        # t_0 = 0
-
-        #-----
 
         rocket = JuMP.Model(NLopt.Optimizer)
         JuMP.set_optimizer_attribute(rocket, "algorithm", :LD_SLSQP)
@@ -352,9 +342,11 @@ function solve_NLP(
         JuMP.@variables(
             rocket, 
             begin
-                constraints_x[i][j, k][1] ≥ _x[i = 1:ns, j = 1:nx, k = 1:(n[i] + 1)] ≥ constraints_x[i][j, k][2] , (start = x[i][j, k])
-                constraints_u[i][j, k][1] ≥ _u[i = 1:ns, j = 1:nu, k = 1:(n[i] + 1)] ≥ constraints_u[i][j, k][2] , (start = u[i][j, k])
+                constraints_x[j][1] ≥ _x[i = 1:ns, j = 1:nx, k = 1:(n[i] + 1)] ≥ constraints_x[j][2] , (start = x[i][j, k])
+                constraints_u[j][1] ≥ _u[i = 1:ns, j = 1:nu, k = 1:(n[i] + 1)] ≥ constraints_u[j][2] , (start = u[i][j, k])
                 _a[1:na]
+                _nx
+                _nu
             end
         )
 
@@ -362,10 +354,13 @@ function solve_NLP(
             JuMP.fix(_a[i], a[i]; force = true)
         end
 
+        JuMP.fix(_nx, nx; force = true)
+        JuMP.fix(_nu, nu; force = true)
+
 
         # JuMP.Containers.SparseAxisArray{VariableRef, 3, Tuple{Int64, Int64, Int64}}
-        println("---------------------------------------------------------------------------")
-        println(typeof(_x))
+        # println("---------------------------------------------------------------------------")
+        # println(typeof(_x))
 
         @NLobjective(rocket, Max, _x[ns, 1, n[ns] + 1])
 
@@ -374,15 +369,15 @@ function solve_NLP(
         f_sym = [Symbol("f_$(j)") for (j, ele_f) in enumerate(f)]
 
         for (j, ele_f) in enumerate(f)
-            JuMP.register(rocket, f_sym[j], nx + nu + na, ele_f, autodiff = true)
+            JuMP.register(rocket, f_sym[j], nx + nu + na + 2, ele_f, autodiff = true)
         end
             
         fx = JuMP.Containers.SparseAxisArray(Dict(
-            ((i, j, k), JuMP.add_nonlinear_expression(rocket, :($(f_sym[j])($(_x[i, :, k]...), $(_u[i, :, k]...), $(_a...)))))
+            ((i, j, k), JuMP.add_nonlinear_expression(rocket, :($(f_sym[j])($(_nx), $(_nu), $(_x[i, :, k]...), $(_u[i, :, k]...), $(_a...)))))
             for i in 1:ns for (j, ele_f) in enumerate(f) for k in 1:(n[i] + 1)
         ))
-        println("---------------------------------------------------------------------------")
-        println(typeof(fx))
+        # println("---------------------------------------------------------------------------")
+        # println(typeof(fx))
 
         JuMP.@NLexpressions(
             rocket,
@@ -394,13 +389,13 @@ function solve_NLP(
                 t[i = 1:ns, k = 1:(n[i] + 1)], (tf[i] - t0[i])/2*τ[n[i]][k] + (tf[i] + t0[i])/2
             end
         );
-        println("---------------------------------------------------------------------------")
-        println(typeof(Dx))
+        # println("---------------------------------------------------------------------------")
+        # println(typeof(Dx))
 
         JuMP.@NLconstraint(rocket, con1[i = 1:ns, j = 1:nx, k = 1:(n[i] + 1)], Dx[i, j, k] == T_2[i]*fx[i, j, k])
 
         if (ns >= 1)
-            JuMP.@NLconstraint(rocket,con2[1, j = 1:nx],  _x[ns, j, n[ns] + 1] - _x[ns, j, 1] == wDx[ns, j])
+            JuMP.@NLconstraint(rocket,con2[[1], j = 1:nx],  _x[ns, j, n[ns] + 1] - _x[ns, j, 1] == wDx[ns, j])
             if (ns > 1)
                 JuMP.@NLconstraint(rocket, con2[i = 2:ns, j = 1:nx], _x[i, j, 1] - _x[i - 1, j, 1] == wDx[i, j])
             end
@@ -438,7 +433,7 @@ function solve_NLP(
             end
         end
 
-        # println("Solving...")
+        println("Solving...")
         JuMP.optimize!(rocket)
         # print(solution_summary(rocket))
 
@@ -520,14 +515,24 @@ function main()
     na = 1
     n = Int[7 for i in 1:ns]
     x = [Real[0.0 for j in 1:nx, k in 1:(n[i] + 1)] for i in 1:ns]
-    cx = [Tuple{Real, Real}[(1.0, -1.0) for j in 1:nx, k in 1:(n[i] + 1)] for i in 1:ns]
+    cx = Tuple{Real, Real}[(1.0, -1.0) for j in 1:nx]
     u = [Real[0.0 for j in 1:nu, k in 1:(n[i] + 1)] for i in 1:ns]
-    cu = [Tuple{Real, Real}[(1.0, -1.0) for j in 1:nu, k in 1:(n[i] + 1)] for i in 1:ns]
+    cu = Tuple{Real, Real}[(1.0, -1.0) for j in 1:nu]
     bx = Tuple{Real, Real}[(NaN, NaN) for _ in 1:nx]
     bu = Tuple{Real, Real}[(NaN, NaN) for _ in 1:nu]
     c_eq = Tuple{Function, Array{Real, 1}}[]
     c_le = Tuple{Function, Array{Real, 1}}[]
-    f = Function[(x...) -> sum(x) for j in 1:nx]
+    f = Function[(x...) -> sum(x[3:end]) for j in 1:nx]
+    # f = Function[
+    #     ((nx, nu, r, θ, v_r, v_θ , γ, na) -> v_r),
+    #     ((nx, nu, r, θ, u, v, γ, na) -> v/r),
+    #     ((nx, nu, r, θ, u, v, γ, na) -> v^2.0/r - r^(-2.0) + T/(1 - m_p*t[k])*sin(γ[k])),
+    #     ((nx, nu, r, θ, u, v, γ, na) -> )
+    # ]
+    # # fr[k = 1:(n + 1)], u[k]
+    # # fθ[k = 1:(n + 1)], v[k]/r[k]
+    # # fu[k = 1:(n + 1)], v[k]^2.0/r[k] - r[k]^(-2.0) + T/(1 - m_p*t[k])*sin(γ[k])
+    # # fv[k = 1:(n + 1)], -u[k]*v[k]/r[k] + T/(1 - m_p*t[k])*cos(γ[k])
     a = Real[1]
     t0 = Real[0.0]
     tf = Real[1.0]
@@ -536,10 +541,12 @@ function main()
 
 
     while (true)
+        println(x)
         (x, u, dx, fx) = solve_NLP(ns, nx, nu, na, n, x, cx, u, cu, bx, bu, c_eq, c_le, f, a, τ, t0, tf, D, W)
         
-        (ns, n, x, t0, tf) = refine(ns, nx, nu, n, x, u, dx, fx, τ, t0, tf, ε_tol, 0.8, W)
+        (ns, n, x, u, t0, tf) = refine(ns, nx, nu, n, x, u, dx, fx, τ, t0, tf, ε_tol, 0.8, W)
         if ns < 0
+            println(x)
             break
         end
     end
