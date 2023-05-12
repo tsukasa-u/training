@@ -350,6 +350,8 @@ function solve_NLP(
                 _a[1:na]
                 _nx
                 _nu
+                _na 
+                _na_obj
                 _a_obj[1:na_obj]
             end
         )
@@ -364,6 +366,8 @@ function solve_NLP(
 
         JuMP.fix(_nx, nx; force = true)
         JuMP.fix(_nu, nu; force = true)
+        JuMP.fix(_na, na; force = true)
+        JuMP.fix(_na_obj, na; force = true)
 
         JuMP.@NLexpressions(
             rocket,
@@ -378,24 +382,33 @@ function solve_NLP(
         # println(typeof(_x))
 
         f_sym_obj = Symbol("f_0")
-        JuMP.register(rocket, f_sym_obj, nx + nu + na + 3, obj_f, autodiff = true)
-        obj_expr = JuMP.add_nonlinear_expression(rocket, :($(f_sym_obj)($(_nx), $(_nu), $(t[ns, n[ns] + 1]), $(_x[ns, :, n[ns] + 1]...), $(_u[ns, :, n[ns] + 1]...), $(_a_obj...))))
+        JuMP.register(rocket, f_sym_obj, nx + nu + na_obj + 4, obj_f, autodiff = true)
+        obj_expr = (
+            na_obj > 0 
+            ? JuMP.add_nonlinear_expression(rocket, :($(f_sym_obj)($(_nx), $(_nu), $(_na_obj), $(t[ns, n[ns] + 1]), $(_x[ns, :, n[ns] + 1]...), $(_u[ns, :, n[ns] + 1]...), $(_a_obj...))))
+            : JuMP.add_nonlinear_expression(rocket, :($(f_sym_obj)($(_nx), $(_nu), $(_na_obj), $(t[ns, n[ns] + 1]), $(_x[ns, :, n[ns] + 1]...), $(_u[ns, :, n[ns] + 1]...))))
+        )
         @NLobjective(rocket, Max, obj_expr)
-        # JuMP.set_objective(rocket, MIN_SENSE, ($f_sym_obj($(_nx), $(_nu), t[$ns, $(n[ns] + 1)], $(_x[ns, :, n[ns] + 1]...), $(_u[ns, :, n[ns] + 1]...), $(_a_obj...))))
-        # JuMP.set_objective_sense(rocket, MIN_SENSE)
-        # JuMP.set_objective_function(rocket, :($(f_sym_obj)($(_nx), $(_nu), $(t[ns, n[ns] + 1]), $(_x[ns, :, n[ns] + 1]...), $(_u[ns, :, n[ns] + 1]...), $(_a_obj...))))
-        # @NLobjective(rocket, Max, :($(f_sym_obj[1])($(_nx), $(_nu), $(t[ns, n[ns] + 1]), $(_x[ns, :, n[ns] + 1]...), $(_u[ns, :, n[ns] + 1]...), $(_a_obj...))))
-
+        # @NLobjective(rocket, Max, obj_f(_nx, _nu, t[end, end], _x[ns, :, n[ns] + 1]...))
+        # println(JuMP.objective_function(rocket))
+        
         f_sym = [Symbol("f_$(j)") for (j, ele_f) in enumerate(f)]
 
         for (j, ele_f) in enumerate(f)
-            JuMP.register(rocket, f_sym[j], nx + nu + na + 3, ele_f, autodiff = true)
+            JuMP.register(rocket, f_sym[j], nx + nu + na + 4, ele_f, autodiff = true)
         end
             
-        fx = JuMP.Containers.SparseAxisArray(Dict(
-            ((i, j, k), JuMP.add_nonlinear_expression(rocket, :($(f_sym[j])($(_nx), $(_nu), $(t[i, k]), $(_x[i, :, k]...), $(_u[i, :, k]...), $(_a...)))))
-            for i in 1:ns for (j, ele_f) in enumerate(f) for k in 1:(n[i] + 1)
-        ))
+        fx = JuMP.Containers.SparseAxisArray(
+            na > 0
+            ? Dict(
+                ((i, j, k), JuMP.add_nonlinear_expression(rocket, :($(f_sym[j])($(_nx), $(_nu), $(_na), $(t[i, k]), $(_x[i, :, k]...), $(_u[i, :, k]...), $(_a...)))))
+                for i in 1:ns for (j, ele_f) in enumerate(f) for k in 1:(n[i] + 1)
+            )
+            : Dict(
+                ((i, j, k), JuMP.add_nonlinear_expression(rocket, :($(f_sym[j])($(_nx), $(_nu), $(_na), $(t[i, k]), $(_x[i, :, k]...), $(_u[i, :, k]...)))))
+                for i in 1:ns for (j, ele_f) in enumerate(f) for k in 1:(n[i] + 1)
+            )
+        )
         # println("---------------------------------------------------------------------------")
         # println(typeof(fx))
 
@@ -422,17 +435,29 @@ function solve_NLP(
         end
 
         for (j, ele_f) in enumerate(constraints_eq)
-            f_sym  = Symbol("f_$(j)")
-            JuMP.register(rocket, f_sym, size(ele_f[2], 1) + 2*nx + 2*nu, ele_f, autodiff = true)
-            JuMP.add_nonlinear_constraint(rocket, :($(f_sym)($(_x[0, :, 0]), $(_x[ns, :, n[ns] + 1]), $(_u[0, :, 0]), $(_u[ns, :, n[ns] + 1]), $(ele_f[2]))))
+            f_sym_eq  = Symbol("f_eq_$(j)")
+            tmp = size(ele_f[2], 1)
+            JuMP.register(rocket, f_sym_eq, tmp + 2*nx + 2*nu + 3, ele_f[1], autodiff = true)
+            if tmp > 0
+                JuMP.add_nonlinear_constraint(rocket, :($(f_sym_eq)($(_nx), $(_nu), $(tmp), $(_x[1, :, 1]...), $(_x[ns, :, n[ns] + 1]...), $(_u[1, :, 1]...), $(_u[ns, :, n[ns] + 1]...), $(ele_f[2]...)) == 0))
+            else
+                a = JuMP.add_nonlinear_constraint(rocket, :($(f_sym_eq)($(_nx), $(_nu), $(tmp), $(_x[1, 1:1:nx, 1]...), $(_x[ns, 1:1:nx, n[ns] + 1]...), $(_u[1, :, 1]...), $(_u[ns, :, n[ns] + 1]...)) == 0))
+                println(:($(_x[1,:,1] ...)))
+                println(:($([_x[1,j,1] for j in 1:nx] ...)))
+                println(a)
+            end
             # @NLconstraint(rocket, conx[j], ele_f[1](_x, _u, ele_f[2]) == 0)
         end
 
         for (j, ele_f) in enumerate(constraints_le)
-            f_sym  = Symbol("f_$(j)")
-            JuMP.register(rocket, f_sym, size(ele_f[2], 1) + 2*nx + 2*nu, ele_f, autodiff = true)
-            JuMP.add_nonlinear_constraint(rocket, :($(f_sym)($(_x[0, :, 0]), $(_x[ns, :, n[ns] + 1]), $(_u[0, :, 0]), $(_u[ns, :, n[ns] + 1]), $(ele_f[2]))))
-            # @NLconstraint(rocket, conu[j], ele_f[1](_x, _u, ele_f[2]) == 0)
+            f_sym_le  = Symbol("f_le_$(j)")
+            tmp = size(ele_f[2], 1)
+            JuMP.register(rocket, f_sym_le, tmp + 2*nx + 2*nu + 3, ele_f[1], autodiff = true)
+            if tmp > 0
+                JuMP.add_nonlinear_constraint(rocket, :($(f_sym_le)($(_nx), $(_nu), $(tmp), $(_x[0, :, 0]...), $(_x[ns, :, n[ns] + 1]...), $(_u[0, :, 0]...), $(_u[ns, :, n[ns] + 1]...), $(ele_f[2]...)) <= 0))
+            else
+                JuMP.add_nonlinear_constraint(rocket, :($(f_sym_le)($(_nx), $(_nu), $(tmp), $(_x[0, :, 0]...), $(_x[ns, :, n[ns] + 1]...), $(_u[0, :, 0]...), $(_u[ns, :, n[ns] + 1]...)) <= 0))
+            end
         end
 
         for (i, ele) in enumerate(bound_x)
@@ -470,13 +495,13 @@ function solve_NLP(
         _rDx = [[rDx[i, j, k] for j in 1:nx, k in 1:(n[i] + 1)] for i in 1:ns]
         _rfx = [[rfx[i, j, k] for j in 1:nx, k in 1:(n[i] + 1)] for i in 1:ns]
 
-        # delete_x = all_variables(rocket)
-        # delete(rocket, delete_x)
-        # unregister(model, :delete_x)
+        delete_x = all_variables(rocket)
+        delete(rocket, delete_x)
+        unregister(model, :delete_x)
 
-        # delete_con = all_nonlinear_constraints(rocket)
-        # delete(rocket, delete_con)
-        # unregister(model, :delete_con)
+        delete_con = all_nonlinear_constraints(rocket)
+        delete(rocket, delete_con)
+        unregister(model, :delete_con)
         
         return (
             _rx,
@@ -532,7 +557,7 @@ function main()
     ns = 1
     nx = 4
     nu = 1
-    na = 1
+    na = 2
     n = Int[7 for i in 1:ns]
     x = [Real[0.0 for j in 1:nx, k in 1:(n[i] + 1)] for i in 1:ns]
     cx = Tuple{Real, Real}[(1.0, -1.0) for j in 1:nx]
@@ -540,27 +565,31 @@ function main()
     cu = Tuple{Real, Real}[(1.0, -1.0) for j in 1:nu]
     bx = Tuple{Real, Real}[(NaN, NaN) for _ in 1:nx]
     bu = Tuple{Real, Real}[(NaN, NaN) for _ in 1:nu]
-    c_eq = Tuple{Function, Array{Real, 1}}[]
+    c_eq = Tuple{Function, Array{Real, 1}}[
+        (
+            ((nx, nu, na, r0, θ0, v_r0, v_θ0, rf, θf, v_rf, v_θf, γ0, γf) -> v_rf - 1/sqrt(rf)), []
+        )
+    ]
     c_le = Tuple{Function, Array{Real, 1}}[]
     f = Function[
-        ((nx, nu, t, r, θ, v_r, v_θ , γ, na, T, m_p) -> v_r),
-        ((nx, nu, t, r, θ, v_r, v_θ , γ, na, T, m_p) -> v_θ/r),
-        ((nx, nu, t, r, θ, v_r, v_θ , γ, na, T, m_p) -> v_θ^2.0/r - r^(-2.0) + T/(1 - m_p*t)*sin(γ)),
-        ((nx, nu, t, r, θ, v_r, v_θ , γ, na, T, m_p) -> -v_r*v_θ/r + T/(1 - m_p*t)*cos(γ))
+        ((nx, nu, na, t, r, θ, v_r, v_θ, γ, T, m_p) -> v_r),
+        ((nx, nu, na, t, r, θ, v_r, v_θ, γ, T, m_p) -> v_θ/r),
+        ((nx, nu, na, t, r, θ, v_r, v_θ, γ, T, m_p) -> v_θ^2.0/r - r^(-2.0) + T/(1 - m_p*t)*sin(γ)),
+        ((nx, nu, na, t, r, θ, v_r, v_θ, γ, T, m_p) -> -v_r*v_θ/r + T/(1 - m_p*t)*cos(γ))
     ]
-    a = Real[1]
-    f_obj = (nx, nu, t, x...) -> x[1]
-    na_obj = 1
-    a_obj = Real[1]
+    a = Real[0.1405, 0.0749]
+    f_obj = (nx, nu, na, t, x...) -> x[1]
+    na_obj = 0
+    a_obj = Real[]
     t0 = Real[0.0]
-    tf = Real[1.0]
+    tf = Real[3.32]
 
     ε_tol = 2
 
 
     while (true)
         println(x)
-        (x, u, dx, fx) = solve_NLP(ns, nx, nu, na, n, x, cx, u, cu, bx, bu, c_eq, c_le, f, a, f_obj, na_obj, a_obj,τ, t0, tf, D, W)
+        (x, u, dx, fx) = solve_NLP(ns, nx, nu, na, n, x, cx, u, cu, bx, bu, c_eq, c_le, f, a, f_obj, na_obj, a_obj, τ, t0, tf, D, W)
         
         (ns, n, x, u, t0, tf) = refine(ns, nx, nu, n, x, u, dx, fx, τ, t0, tf, ε_tol, 0.8, W)
         if ns < 0
