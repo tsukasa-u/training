@@ -353,43 +353,66 @@ end
 function base_L(x, k, τ::Array{Real, 1})
     a1 = cat(τ[1:(k - 1)], τ[(k + 1):end]; dims = 1)
     tk = τ[k]
-    b1 = (x .- a1)/(tk .- a1)
+    b1 = (x .- a1)./(tk .- a1)
     return reduce(*, b1)
 end
 
-# dL_dτ(x, k, τ::Array{Real, 1}) = ForwardDiff.derivative(x -> base_L(x, k, τ), x)
+dL_dτ(x, k, τ::Array{Real, 1}) = ForwardDiff.derivative(x -> base_L(x, k, τ), x)
 
-function dL_dτ(i, k, τ::Array{Real, 1})
-    ai = deleteat!(τ, i)
-    bi = reduce(*, ai)
-    ret = 0.0
-    for l in 1:(n + 1)
-        ak = deleteat!(τ, [k, l])
-        bk = reduce(*, ak)
-        ret += bk
-    end
-    return ret/bi
-end
+# function dL_dτ(n, i, k, τ::Array{Real, 1})
+#     if n == 1
+#         return 1.0
+#     end
+#     taui = copy(τ)
+#     deleteat!(taui, i)
+#     ret = 0.0
+#     for l in 1:(n + 1)
+#         tauk = copy(τ)
+#         deleteat!(tauk, unique(sort([i, l])))
+#         ret += reduce(*, τ[k] .- tauk)
+#     end
+#     return ret/reduce(*, τ[i] .- taui)
+#     # return sum(reduce(*, deleteat!(τ, [k, l])) for l in 1:(n + 1))/bi
+# end
+
+# function compute_W(n, τ::Array{Real, 1})
+    
+# end
+
+# function compute_W(n, α, β, τ::Array{Real, 1})
+    
+#     P = Jacobi{α, β}
+#     Pn = basis(P, n)
+#     p_n = Pn.(τ)
+
+#     # fill(pi/n, n)
+#     _w = fill(0.0, n + 1)
+
+#     a_1 = 2^(α + β + 1)*gamma(α + 2)*gamma(β + 2)/gamma(α + β + 3)/n^2*Real_binomial(n + α, n - 1)*Real_binomial(n + β, n - 1)/Real_binomial(n + α + β + 1, n - 1)
+#     a_2 = (4*(n + α)*(n + β) + (α - β)^2)/(2*n + α + β)^2
+
+#     for i in 2:n
+#         _w[i] = a_1/(a_2 - τ[i]^2)*(1 - τ[i]^2)/p_n[i]^2
+#     end
+#     _w[1] = 2^(α + β + 1)*gamma(α + 2)*gamma(β + 1)/gamma(α + β + 3)*Real_binomial(n + α, n - 1)/Real_binomial(n + β, n - 1)/Real_binomial(n + α + β + 1, n - 1)
+#     _w[n + 1] = _w[1]
+#     return _w
+# end
 
 function compute_W(n, D::Array{Real, 2})
-    if n == 1
-        return [1.0]
-    end
-    println(D)
-    println(inv(D[:, 2:end]))
-    return sum(inv(D[:, 2:end]), dims = 1)
+    return vec(sum(inv(D[:, 2:end]), dims = 1))
 end
 
 function compute_D(n::Int, tau::Array{Real, 1})
     
-    # D = zeros(n, n + 1)
-    # for i in 1:n
-    #     for j in 1:(n + 1)
-    #         D[i, j] = dL_dτ(tau[i], j, tau)
-    #     end
-    # end
-    # return D
-    return [dL_dτ(i, j, tau) for i in 1:n, j in 1:(n + 1)]
+    D = zeros(n, n + 1)
+    for i in 1:n
+        for j in 1:(n + 1)
+            D[i, j] = dL_dτ(tau[i], j, tau)
+        end
+    end
+    return D
+    # return [dL_dτ(n, i, j, tau) for i in 1:n, j in 1:(n + 1)]
 end
 
 #-------------------------------------------------------
@@ -535,11 +558,11 @@ function solve_NLP(
     JuMP.@NLconstraint(rocket, [i = 1:ns, j = 1:nx, k = 1:n[i]], Dx[i, j, k] == T_2[i]*fx[i, j, k])
 
     if (ns >= 1)
-        JuMP.@NLconstraint(rocket,[j = 1:nx],  _x[ns, j, n[ns] + 1] - _x[ns, j, 1] == xDw[ns, j])
+        # JuMP.@NLconstraint(rocket,[j = 1:nx],  _x[ns, j, n[ns] + 1] - _x[ns, j, 1] == xDw[ns, j])
         if (ns > 1)
-            JuMP.@NLconstraint(rocket, [i = 2:ns, j = 1:nx], _x[i, j, 1] - _x[i - 1, j, 1] == xDw[i, j])
+            # JuMP.@NLconstraint(rocket, [i = 2:ns, j = 1:nx], _x[i, j, 1] - _x[i - 1, j, 1] == xDw[i, j])
             JuMP.@NLconstraint(rocket, [i = 2:ns, j = 1:nx], _x[i, j, 1] == _x[i - 1, j, n[i - 1] + 1])
-            # JuMP.@NLconstraint(rocket, [i = 2:ns, j = 1:nx], Dx[i, j, 1] == Dx[i - 1, j, n[i - 1] + 1])
+            JuMP.@NLconstraint(rocket, [i = 2:ns, j = 1:nx], Dx[i, j, 1] == Dx[i - 1, j, n[i - 1]])
 
             JuMP.@NLconstraint(rocket, [i = 2:ns, j = 1:nu], _u[i, j, 1] == _u[i - 1, j, n[i - 1] + 1])
         end
@@ -690,18 +713,19 @@ end
 function main()
 
     n_max = 50
-    n_min = 1
+    n_min = 5
     alpha = 0.0
     beta = 0.0
-    τ = Array{Real, 1}[compute_tau(n, alpha, beta) for n in n_min:n_max]
-    D = Array{Real, 2}[compute_D(n, τ[n]) for n in n_min:n_max]
-    W = Array{Real, 1}[compute_W(n, D[n], τ[n]) for n in n_min:n_max]
+    τ = Array{Real, 1}[n >= n_min ? compute_tau(n, alpha, beta) : [] for n in 1:n_max]
+    D = Array{Real, 2}[n >= n_min ? compute_D(n, τ[n]) : [0 0; 0 0;] for n in 1:n_max]
+    W = Array{Real, 1}[n >= n_min ? compute_W(n, D[n]) : [] for n in 1:n_max]
+    # W = Array{Real, 1}[n >= n_min ? compute_W(n, alpha, beta, τ[n]) : [] for n in 1:n_max]
 
     ns = 1
     nx = 3
     nu = 2
     na = 0
-    n = Int[12 for i in 1:ns]
+    n = Int[32 for i in 1:ns]
     
     x = [
         Real[
