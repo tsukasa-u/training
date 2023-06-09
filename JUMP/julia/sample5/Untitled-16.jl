@@ -400,7 +400,7 @@ dL_dτ(x, k, τ::Array{Real, 1}) = ForwardDiff.derivative(x -> base_L(x, k, τ),
 # end
 
 function compute_W(n, D::Array{Real, 2})
-    return vec(sum(inv(D[:, 2:end]), dims = 1))
+    return vec(inv(D[:, 2:end])[end, :])
 end
 
 function compute_D(n::Int, tau::Array{Real, 1})
