@@ -741,7 +741,7 @@ function solve_NLP(
 end
 function main()
 
-    n_max = 110
+    n_max = 50
     n_min = 5
     alpha = 0.0
     beta = 0.0
@@ -754,7 +754,7 @@ function main()
     nx = 3
     nu = 4
     na = 0
-    n = Int[100 for i in 1:ns]
+    n = Int[40 for i in 1:ns]
     
     x = [
         Real[
@@ -809,7 +809,7 @@ function main()
     t0 = Real[0.0]
     tf = Real[55.0]
 
-    ε_tol = 0.02
+    ε_tol = 0.01
 
     while (true)
     # for _ in 1:1
@@ -946,4 +946,4 @@ function plot_graph(index, plot_x, plot_u, plot_ε, plot_t, tf, t0)
     png(string(index, base = 10, pad = 2))
 end
 
-main()
+@time main()
