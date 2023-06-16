@@ -1,5 +1,3 @@
-mod sample1;
-
 use optimization_engine::{panoc::*, *};
 
 fn f_cost(n: &[i32], u: &[f64]) -> f64 {
