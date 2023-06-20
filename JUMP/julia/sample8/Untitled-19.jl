@@ -1,5 +1,5 @@
 using JuMP
-import Ipopt
+using Ipopt
 # using NLopt
 using Plots
 
@@ -809,7 +809,7 @@ function main()
     t0 = Real[0.0]
     tf = Real[55.0]
 
-    ε_tol = 0.01
+    ε_tol = 0.001
 
     while (true)
     # for _ in 1:1
@@ -817,7 +817,7 @@ function main()
         
         (x, u) = fix_constraints(ns, nx, nu, n, x, u, cx, cu)
         
-        option(index, ns > 0 ? ns : -ns, n, x, u, τ, tf, t0)
+        option(index, ns > 0 ? ns : -ns, n, x, u, τ, tf, t0; save=true)
 
         (x, u, dx, fx, t0, tf) = solve_NLP(ns, nx, nu, n, x, cx, u, cu, bx, bu, c_eq, c_le, b_eq, b_le, f, na, a, f_obj, na_obj, a_obj, f_int, na_int, a_int, τ, t0, tf, ct, bt, D, W, 1e-12)
         global index += 1
@@ -828,26 +828,28 @@ function main()
         if ns < 0
             ns *= -1
             global index += 1
-            option(index, ns, n, x, u, τ, tf, t0)
+            option(index, ns, n, x, u, τ, tf, t0; save = true)
             break
         end
     end
     
 end
 
-function option(index, ns, n, x, u, τ, tf, t0; ε = (false, 0, NaN, NaN, NaN))
+function option(index, ns, n, x, u, τ, tf, t0; ε = (false, 0, NaN, NaN, NaN), save = false)
 
     plot_x = cat(x..., dims = 2)
     plot_u = cat(u..., dims = 2)
     plot_t = cat([((τ[n[i]]).*((tf[i] - t0[i])/2)).+((tf[i] + t0[i])/2) for i in 1:ns]..., dims = 1)
-    (isε, nx, εx, wx, fx) = ε
-    plot_ε = []
-    if isε
-        plot_ε = cat([compute_difficulty(n[i], fx[i], wx, Real[εx[j][i] for j in 1:nx], τ[n[i]], t0[i], tf[i]) for i in 1:ns]..., dims = 1)
-    end
+    # (isε, nx, εx, wx, fx) = ε
+    # plot_ε = []
+    # if isε
+    #     plot_ε = cat([compute_difficulty(n[i], fx[i], wx, Real[εx[j][i] for j in 1:nx], τ[n[i]], t0[i], tf[i]) for i in 1:ns]..., dims = 1)
+    # end
 
-    # save_file(plot_x, plot_u, plot_t)
-    plot_graph(index, plot_x, plot_u, plot_ε, plot_t, tf, t0)
+    if save
+        save_file(plot_x, plot_u, plot_t)
+    end
+    # plot_graph(index, plot_x, plot_u, plot_ε, plot_t, tf, t0)
 end
 
 function save_file(plot_x, plot_u, plot_t)
@@ -869,7 +871,11 @@ function save_file(plot_x, plot_u, plot_t)
                 ",",
                 plot_u[1, i],
                 ",",
-                plot_u[2, i]
+                plot_u[2, i],
+                ",",
+                plot_u[3, i],
+                ",",
+                plot_u[4, i]
             )
         end
     end
