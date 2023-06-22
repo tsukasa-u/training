@@ -69,7 +69,7 @@ function select_refine_segment(ε_tol::Real, α::Real, nx::Int, ε::Array{Array{
     ret_index::Array{Int, 1} = []
     for (j, ele) in enumerate(ε)
         idx = sortperm(ele)
-        println(idx)
+        # println(idx)
         sum = 0
         # r = 0
         # push!(ret_index, idx[end])
@@ -227,7 +227,8 @@ function refine(
             tmp = compute_ε(
                 ns, 
                 n, 
-                Array{Real, 1}[[dx[i][j, k] for k in 1:n[i]] for i in 1:ns], 
+                # Array{Real, 1}[[dx[i][j, k] for k in 1:n[i]] for i in 1:ns], 
+                Array{Real, 1}[[(x[i][j, k + 1] - x[i][j, k])/(τ[n[i]][k + 1] - τ[n[i]][k]) for k in 1:n[i]] for i in 1:ns], 
                 Array{Real, 1}[[x[i][j, k] for k in 1:(n[i] + 1)] for i in 1:ns], 
                 Array{Real, 1}[[fx[i][j, k] for k in 1:(n[i] + 1)] for i in 1:ns], 
                 W,
@@ -813,7 +814,7 @@ function main()
     t0 = Real[0.0]
     tf = Real[55.0]
 
-    ε_tol = 1E-12
+    ε_tol = 1E-5
 
     while (true)
     # for _ in 1:1
