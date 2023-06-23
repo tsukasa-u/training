@@ -11,6 +11,8 @@ using ForwardDiff
 
 using Roots
 
+using CPUTime
+
 index = 0
 
 #-------------------------------------------------------
@@ -69,18 +71,13 @@ function select_refine_segment(ε_tol::Real, α::Real, nx::Int, ε::Array{Array{
     ret_index::Array{Int, 1} = []
     for (j, ele) in enumerate(ε)
         idx = sortperm(ele)
-        # println(idx)
-        sum = 0
-        # r = 0
-        # push!(ret_index, idx[end])
+        # sum = 0
         union!(ret_index, idx[end])
         for i in idx
-            sum += ele[i]
-            if sum > α*ε_tol
-                # push!(ret_index, i)
+            # sum += ele[i]
+            if ele[i] > α*ε_tol
+            # if sum > α*ε_tol
                 union!(ret_index, i)
-                # ret_index[j] = r
-                # break
             end
         end
     end
@@ -90,9 +87,9 @@ end
 function compute_difficulty(n::Int, f::Array{Real, 2}, w::Array{Real, 1}, ε::Array{Real, 1}, τ::Array{Real, 1}, t0::Real, tf::Real)::Array{Real, 1}
 
     F_k = [sum(ε[j]*f[j, k]/w[j] for (j, ele) in enumerate(ε)) for k in 1:(n+1)]
-    # F_1 = [(F_k[k+1] - F_k[k])*2/(tf - t0)/(τ[k+1] - τ[k]) for k in 1:n]
-    # insert!(F_1, 1, NaN)
-    F_2 = [(F_k[k] - F_k[k-1])*2/(tf - t0)/(τ[k+1] - τ[k-1]) for k in 2:n]
+    F_1 = [(F_k[k+1] - F_k[k])*2/(tf - t0)/(τ[k+1] - τ[k]) for k in 1:n]
+    insert!(F_1, 1, NaN)
+    F_2 = [(F_1[k] - F_1[k-1])*2/(tf - t0)/(τ[k+1] - τ[k-1]) for k in 2:n]
     insert!(F_2, 1, NaN)
 
     sum_F = sum(abs(F_2[l]) for l in 2:n)
@@ -814,7 +811,7 @@ function main()
     t0 = Real[0.0]
     tf = Real[55.0]
 
-    ε_tol = 1E-5
+    ε_tol = 1E-3
 
     while (true)
     # for _ in 1:1
@@ -957,4 +954,4 @@ function plot_graph(index, plot_x, plot_u, plot_ε, plot_t, tf, t0)
     png(string(index, base = 10, pad = 2))
 end
 
-@time main()
+@time @CPUtime main()
