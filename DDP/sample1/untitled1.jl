@@ -116,6 +116,11 @@ function compute_Vxx(Qxx, Qux, K)
     return Qxx + transpose(K) * Qux
 end
 
+function set_constraint!(x, xc, u, uc)
+    x .= min.(max.(x, xc[1]), xc[2])
+    u .= min.(max.(u, uc[1]), uc[2])
+end
+
 function BFP(n, x, u)
 
     list_k = []
@@ -143,29 +148,34 @@ function BFP(n, x, u)
     return list_k, list_K
 end
 
-function FFP(n, x, u, α, dt, k, K)
+function FFP(n, x, u, xc, uc, α, dt, k, K)
 
     _x = copy(x)
     _u = copy(u)
-    for i in 1:(n-1)
+    for i in 1:(n - 1)
         # println(u[i])
         # println(α*k[i])
         # println(K[i] * (_x[i] - x[i]))
         _u[i] = u[i] .+ α*k[i] .+ K[i] * (_x[i] - x[i])
+
+        set_constraint!(_x[i], xc, _u[i], uc)
+
         _x[i + 1] = _x[i] + f(_x[i], _u[i])*dt
+        # println(_u[i])
     end
     
     return _x, _u
 end
 
-function BFFP(n, x, u, α, dt)
+function BFFP!(n, x, u, xc, uc, α, dt)
 
     k, K = BFP(n, x, u)
-    _x, u = FFP(n, x, u, α, dt, k, K)
+    _x, _u = FFP(n, x, u, xc, uc, α, dt, k, K)
 
     ret = maximum(maximum(abs.(_x[i] - x[i]) for i in 1:n)) < 1e-6
 
-    x = copy(_x)
+    x .= _x
+    u .= _u
 
     return ret
 end
@@ -185,8 +195,11 @@ function loop()
     x = [Real[(xf[j] - x0[j])*i/(n - 1) + x0[j] for j in 1:nx] for i in 1:n]
     u = [Real[0.001 for j in 1:nu] for i in 1:n]
 
-    for idx in 1:1
-        ret = BFFP(n, x, u, 0.8, dt)
+    xc = [[0.01, 0.0, 0.0], [10.0, 10.0, 10.0]]
+    uc = [[0.0, 0.0, 0.0, 0.0], [0.001, 0.001, 0.001, 0.001]]
+
+    for idx in 1:100
+        ret = BFFP!(n, x, u, xc, uc, 0.8, dt)
         # println(x)
         plot_graph(idx, [x[i][j] for j in 1:nx, i in 1:n], [u[i][j] for j in 1:nu, i in 1:n], [dt*i for i in 1:n])
         if ret
@@ -194,7 +207,6 @@ function loop()
         end
     end
 end
-
 
 function plot_graph(index, plot_x, plot_u, plot_t)
 
@@ -212,6 +224,14 @@ function plot_graph(index, plot_x, plot_u, plot_t)
         label=["u_r" "u_t"],
         xlabel = "t",
         st=:scatter
+    )
+    
+    plot_ref = Plots.plot(
+        plots_x,
+        plots_u,
+        layout = (2, 1),
+        # legend = false,
+        # margin = 1Plots.cm,
     )
     png(string(index, base = 10, pad = 2))
 end
