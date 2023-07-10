@@ -78,6 +78,10 @@ function compute_Q(idx, x, u; __vxx = [;], __vx = [;])
     Qx = _lx + transpose(_fx) * _vx
     Qu = _lu + transpose(_fu) * _vx
 
+    # Qxx = _lxx + transpose(_fx) * _vxx * _fx + sum(_vx[i] * _fxx[i, :, :] for i in 1:nx)
+    # Qux = _lux + transpose(_fu) * _vxx * _fx + sum(_vx[i] * _fux[i, :, :] for i in 1:nx)
+    # Quu = _luu + transpose(_fu) * _vxx * _fu + sum(_vx[i] * _fuu[i, :, :] for i in 1:nx)
+
     Qxx = _lxx + transpose(_fx) * _vxx * _fx + sum(_vx[i] * _fxx[i, :, :] for i in 1:nx)
     Qux = _lux + transpose(_fu) * _vxx * _fx + sum(_vx[i] * _fux[i, :, :] for i in 1:nx)
     Quu = _luu + transpose(_fu) * _vxx * _fu + sum(_vx[i] * _fuu[i, :, :] for i in 1:nx)
@@ -134,9 +138,13 @@ function BFP(n, x, u)
     push!(list_K, K)
 
     for i in (n - 2):-1:1
+
         Vxx = compute_Vxx(Qxx, Qux, K)
         Vx = compute_Vx(Qx, Qu, K)
-        Qx, Qu, Qxx, Qux, Quu = compute_Q(i, x, u; __vxx=Vxx, __vx = Vx)
+        # Vx = Qx - transpose(Qux) * Quu_1 * Qu
+        # Vxx = Qxx - transpose(Qux) * Quu_1 * Qux
+
+        Qx, Qu, Qxx, Qux, Quu = compute_Q(i, x, u; __vxx = Vxx, __vx = Vx)
         Quu_1 = inverse_Quu(Quu)
         k = compute_k(Quu_1, Qu)
         K = compute_K(Quu_1, Qux)
@@ -173,6 +181,7 @@ function BFFP!(n, x, u, xc, uc, α, dt)
     _x, _u = FFP(n, x, u, xc, uc, α, dt, k, K)
 
     ret = maximum(maximum(abs.(_x[i] - x[i]) for i in 1:n)) < 1e-6
+    ret = maximum(maximum(abs.(_x[i + 1] - f(_x[i], _u[i])) for i in 1:(n - 1))) < 1e-6 && ret
 
     x .= _x
     u .= _u
@@ -196,8 +205,9 @@ function loop()
     u = [Real[0.001 for j in 1:nu] for i in 1:n]
 
     xc = [[0.01, 0.0, 0.0], [10.0, 10.0, 10.0]]
-    uc = [[0.0, 0.0, 0.0, 0.0], [0.001, 0.001, 0.001, 0.001]]
+    uc = [[0.0, 0.0, 0.0, 0.0], [0.01, 0.01, 0.01, 0.01]]
 
+    plot_graph(0, [x[i][j] for j in 1:nx, i in 1:n], [u[i][j] for j in 1:nu, i in 1:n], [dt*i for i in 1:n])
     for idx in 1:100
         ret = BFFP!(n, x, u, xc, uc, 0.8, dt)
         # println(x)
