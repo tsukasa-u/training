@@ -247,10 +247,40 @@ function update_Q!(Q::struct_Q, w::tuple_w, r::tuple_r)
     _Q.Qss .= zeros(Q.ns, Q.ns)
 end
 
-function FFP!(w::tuple_w, r::tuple_r, Q::struct_Q, coeff::struct_cofficients, μ<:Vector{Real})
+function FFP!(nw::<:Integer, list_w::Array{tuple_w, 1}, list_coeff::Array{struct_cofficients, 1})
+    x = list_w[1].x
+    u = zeros(list_w[1].nu)
+    s = zeros(list_w[1].ns)
+    y = zeros(list_w[1].ns)
+    for i in 1:nw
+        u .= φ(x, w, list_coeff[i])
+        s .= ψ(x, w, list_coeff[i])
+        y .= ξ(x, w, list_coeff[i])
+
+        list_w[i].u .= u
+        list_w[i].s .= s
+        list_w[i].y .= y
+        list_w[i].x .= x
+
+        x .= f(x, u)
+    end
     
 end
 
-function BFP!(w::tuple_w, r::tuple_r, Q::struct_Q, coeff::struct_cofficients, μ<:Vector{Real})
+function BFP!(nw::<:Integer, list_w::Array{tuple_w, 1}, list_r::Array{tuple_r, 1}, list_coeff::Array{struct_cofficients, 1}, μ<:Vector{Real})
     
+    Q = struct_Q(list_w[1].nx, list_w[1].nu, list_w[1].ns)
+    init_Q!(Q, list_w[1], con)
+    compute_coeff!(list_coeff[1], list_w[1], list_r[1], Q, μ)
+    for i in 2:nw
+        update_Q!(Q, list_w[i], list_r[i])
+        compute_coeff!(list_coeff[i], list_w[i], list_r[i], Q, μ)
+    end
+end
+
+function loop(nw::<:Integer, list_w::Array{tuple_w, 1}, list_r::Array{tuple_r, 1}, list_coeff::Array{struct_cofficients, 1}, μ<:Vector{Real})
+    for i in 1:100
+        FFP!(nw, list_w, list_coeff)
+        BFP!(nw, list_w, list_r, list_coeff, μ)
+    end
 end
