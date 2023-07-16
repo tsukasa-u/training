@@ -70,8 +70,8 @@ mutable struct struct_Q{T<:Real, S<:Integer}
     Qxu::Matrix{T}
     Quu::Matrix{T}
 
-    function struct_Q(_nx::S, _nu::S, _ns::S)
-        self = new()
+    function struct_Q(_nx::S, _nu::S, _ns::S) where S
+        self = new{T, S}()
 
         self.nx = _nx
         self.nu = _nu
@@ -102,8 +102,8 @@ mutable struct tuple_w{T<:Real, S<:Integer}
     s::Vector{T}
     y::Vector{T}
 
-    function tuple_w(_nx::S, _nu::S, _ns::S)
-        self = new()
+    function tuple_w(_nx::S, _nu::S, _ns::S) where S
+        self = new{T, S}()
 
         self.nx = _nx
         self.nu = _nu
@@ -125,8 +125,8 @@ mutable struct tuple_r{T<:Real, S<:Integer}
     rp::Vector{T}
     rhat::Vector{T}
 
-    function tuple_w(_ns::S)
-        self = new()
+    function tuple_w(_ns::S) where S
+        self = new{T, S}()
 
         self.ns = _ns
 
@@ -150,8 +150,8 @@ mutable struct struct_cofficients{T<:Real, S<:Integer}
     θ::Matrix{T}
     ζ::Matrix{T}
 
-    function struct_coefficients(_nx::S, _nu::S, _ns::S)
-        self = new()
+    function struct_coefficients(_nx::S, _nu::S, _ns::S) where S
+        self = new{T, S}()
 
         self.nx = _nx
         self.nu = _nu
@@ -247,7 +247,7 @@ function update_Q!(Q::struct_Q, w::tuple_w, r::tuple_r)
     _Q.Qss .= zeros(Q.ns, Q.ns)
 end
 
-function FFP!(nw::<:Integer, list_w::Array{tuple_w, 1}, list_coeff::Array{struct_cofficients, 1})
+function FFP!(nw::S, list_w::Array{tuple_w, 1}, list_coeff::Array{struct_cofficients, 1}) where S<:Integer
     x = list_w[1].x
     u = zeros(list_w[1].nu)
     s = zeros(list_w[1].ns)
@@ -267,7 +267,7 @@ function FFP!(nw::<:Integer, list_w::Array{tuple_w, 1}, list_coeff::Array{struct
     
 end
 
-function BFP!(nw::<:Integer, list_w::Array{tuple_w, 1}, list_r::Array{tuple_r, 1}, list_coeff::Array{struct_cofficients, 1}, μ<:Vector{Real})
+function BFP!(nw::S, list_w::Array{tuple_w, 1}, list_r::Array{tuple_r, 1}, list_coeff::Array{struct_cofficients, 1}, μ::Vector{T}) where{S<:Integer, T<:Real}
     
     Q = struct_Q(list_w[1].nx, list_w[1].nu, list_w[1].ns)
     init_Q!(Q, list_w[1], con)
@@ -278,7 +278,7 @@ function BFP!(nw::<:Integer, list_w::Array{tuple_w, 1}, list_r::Array{tuple_r, 1
     end
 end
 
-function loop(nw::<:Integer, list_w::Array{tuple_w, 1}, list_r::Array{tuple_r, 1}, list_coeff::Array{struct_cofficients, 1}, μ<:Vector{Real})
+function loop(nw::S, list_w::Array{tuple_w, 1}, list_r::Array{tuple_r, 1}, list_coeff::Array{struct_cofficients, 1}, μ::Vector{T}) where{S<:Integer, T<:Real}
     for i in 1:100
         FFP!(nw, list_w, list_coeff)
         BFP!(nw, list_w, list_r, list_coeff, μ)
