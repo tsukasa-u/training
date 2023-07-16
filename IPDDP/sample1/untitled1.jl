@@ -169,7 +169,7 @@ mutable struct struct_cofficients{T<:Real, S<:Integer}
     end
 end
 
-function init_Q!(_Q::struct_Q, w::tuple_w, con<:Real)
+function init_Q!(_Q::struct_Q, w::tuple_w, con::Vector{T}) where T
 
     xN, uN, sN, yN = w
 
@@ -202,7 +202,7 @@ end
 ψ(x, w::tuple_w, coeff::struct_cofficients) = w.s + coeff.η + coeff.θ*(x - w.x)
 ξ(x, w::tuple_w, coeff::struct_cofficients) = w.y + coeff.χ + coeff.ζ*(x - w.x)
 
-function compute_coeff!(coeff::struct_cofficients, w::tuple_w, r::tuple_r, Q::struct_Q, μ<:Vector{Real})
+function compute_coeff!(coeff::struct_cofficients, w::tuple_w, r::tuple_r, Q::struct_Q, μ::Vector{T}) where T<:Real
     S = diagm(w.s)
     Y = diagm(w.y)
     I = ones(w.ns, w.ns)
