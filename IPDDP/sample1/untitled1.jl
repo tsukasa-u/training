@@ -51,8 +51,8 @@ lf(x) = sum((x .- [4.0, 0.0, 0.5]).^2.0)
 vN(x) = begin
     return lf(x)
 end
-vNx(x::Vector{T}) where T<:Real = ForwardDiff.gradient(x -> v(x, u), x)
-vNxx(x::Vector{T}) where T<:Real = ForwardDiff.hessian(x -> v(x, u), x)
+vNx(x::Vector{T}) where T<:Real = ForwardDiff.gradient(x -> vN(x), x)
+vNxx(x::Vector{T}) where T<:Real = ForwardDiff.hessian(x -> vN(x), x)
 
 mutable struct struct_Q{T<:Real, S<:Integer}
     ns::S
@@ -81,8 +81,8 @@ mutable struct struct_Q{T<:Real, S<:Integer}
         self.Qu = zeros(_nu)
         self.Qs = zeros(_ns)
 
-        self.Qsx = zeros(_nx, _ns)
-        self.Qsu = zeros(_nu, _ns)
+        self.Qsx = zeros(_ns, _nx)
+        self.Qsu = zeros(_ns, _nu)
         self.Qss = zeros(_ns, _ns)
         self.Qxx = zeros(_nx, _nx)  
         self.Qxu = zeros(_nx, _nu)
@@ -169,17 +169,17 @@ mutable struct struct_coefficients{T<:Real, S<:Integer}
     end
 end
 
-function init_Q!(_Q::struct_Q, w::tuple_w) where T
+function init_Q!(_Q::struct_Q, w::tuple_w)
 
-    _Q.Qs .= c(w.x, w.u)
-    _Q.Qsx .= cx(w.x, w.u)
-    _Q.Qsu .= cu(w.x, w.u)
-    _Q.Qss .= zeros(_Q.ns, _Q.ns)
+    _Q.Qs[:] .= c(w.x, w.u)
+    _Q.Qsx[:, :] .= cx(w.x, w.u)
+    _Q.Qsu[:, :] .= cu(w.x, w.u)
+    _Q.Qss[:, :] .= zeros(_Q.ns, _Q.ns)
 
     _fx = fx(w.x, w.u)
     _fu = fu(w.x, w.u)
-    fx_T = transpose(fx(w.x, w.u))
-    fu_T = transpose(fx(w.x, w.u))
+    fx_T = transpose(_fx)
+    fu_T = transpose(_fu)
     _fxx = reshape(fxx(w.x, w.u), (_Q.nx, _Q.nx, _Q.nx))
     _fux = reshape(fux(w.x, w.u), (_Q.nx, _Q.nu, _Q.nx))
     _fuu = reshape(fuu(w.x, w.u), (_Q.nx, _Q.nu, _Q.nu))
@@ -187,13 +187,13 @@ function init_Q!(_Q::struct_Q, w::tuple_w) where T
     _vNx = vNx(w.x)
     _vNxx = vNxx(w.x)
 
-    _Q.Qx .= lx(w.x, w.u) + fx_T*_vNx
-    _Q.Qx .= lu(w.x, w.u) + fu_T*_vNx
+    _Q.Qx[:] .= lx(w.x, w.u) + fx_T*_vNx
+    _Q.Qx[:] .= lu(w.x, w.u) + fu_T*_vNx
 
 
-    _Q.Qxx .= lxx(w.x, w.u) + fx_T*_vNxx*_fx + sum(_vNx[i] * _fxx[i, :, :] for i in 1:_Q.nx)
-    _Q.Qxu .= lxu(w.x, w.u) + fx_T*_vNxx*_fu + sum(_vNx[i] * _fxu[i, :, :] for i in 1:_Q.nx)
-    _Q.Quu .= luu(w.x, w.u) + fu_T*_vNxx*_fu + sum(_vNx[i] * _fuu[i, :, :] for i in 1:_Q.nx)
+    _Q.Qxx[:, :] .= lxx(w.x, w.u) + fx_T*_vNxx*_fx + sum(_vNx[i] * _fxx[i, :, :] for i in 1:_Q.nx)
+    _Q.Qxu[:, :] .= lxu(w.x, w.u) + fx_T*_vNxx*_fu + sum(_vNx[i] * _fxu[i, :, :] for i in 1:_Q.nx)
+    _Q.Quu[:, :] .= luu(w.x, w.u) + fu_T*_vNxx*_fu + sum(_vNx[i] * _fuu[i, :, :] for i in 1:_Q.nx)
 end
 
 φ(x, w::tuple_w, coeff::struct_coefficients) = w.u + coeff.α + coeff.β*(x - w.x)
