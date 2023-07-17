@@ -35,16 +35,16 @@ fxx(x::Vector{Real}, u::Vector{Real}) = ForwardDiff.jacobian(x -> ForwardDiff.ja
 fux(x::Vector{Real}, u::Vector{Real}) = ForwardDiff.jacobian(x -> ForwardDiff.jacobian(u -> f(x, u), u), x)
 fuu(x::Vector{Real}, u::Vector{Real}) = ForwardDiff.jacobian(u -> ForwardDiff.jacobian(u -> f(x, u), u), u)
 
-l(x, u, c) = begin
+l(x, u) = begin
     r, v_r, v_t = x
     u_rp, u_rm, u_tp, u_tm = u
-    return u_rp + u_rm + u_tp + u_tm + (u_rp*u_rm + u_tp*u_tm) + sum((x .- c).^2.0)
+    return u_rp + u_rm + u_tp + u_tm + (u_rp*u_rm + u_tp*u_tm)
 end
-lx(x::Vector{Real}, u::Vector{Real}, c) = ForwardDiff.gradient(x -> l(x, u, c), x,)
-lu(x::Vector{Real}, u::Vector{Real}, c) = ForwardDiff.gradient(u -> l(x, u, c), u)
-lxx(x::Vector{Real}, u::Vector{Real}, c) = ForwardDiff.hessian(x -> l(x, u, c), x)
-lux(x::Vector{Real}, u::Vector{Real}, c) = ForwardDiff.jacobian(x -> ForwardDiff.gradient(u -> l(x, u, c), u), x)
-luu(x::Vector{Real}, u::Vector{Real}, c) = ForwardDiff.hessian(u -> l(x, u, c), u)
+lx(x::Vector{Real}, u::Vector{Real}) = ForwardDiff.gradient(x -> l(x, u), x,)
+lu(x::Vector{Real}, u::Vector{Real}) = ForwardDiff.gradient(u -> l(x, u), u)
+lxx(x::Vector{Real}, u::Vector{Real}) = ForwardDiff.hessian(x -> l(x, u), x)
+lux(x::Vector{Real}, u::Vector{Real}) = ForwardDiff.jacobian(x -> ForwardDiff.gradient(u -> l(x, u), u), x)
+luu(x::Vector{Real}, u::Vector{Real}) = ForwardDiff.hessian(u -> l(x, u), u)
 
 lf(x) = sum((x .- [4.0, 0.0, 0.5]).^2.0)
 
@@ -70,7 +70,7 @@ mutable struct struct_Q{T<:Real, S<:Integer}
     Qxu::Matrix{T}
     Quu::Matrix{T}
 
-    function struct_Q(_nx::S, _nu::S, _ns::S) where S
+    function struct_Q(_nx::S, _nu::S, _ns::S, T::DataType) where S
         self = new{T, S}()
 
         self.nx = _nx
@@ -102,7 +102,7 @@ mutable struct tuple_w{T<:Real, S<:Integer}
     s::Vector{T}
     y::Vector{T}
 
-    function tuple_w(_nx::S, _nu::S, _ns::S) where S
+    function tuple_w(_nx::S, _nu::S, _ns::S, T::DataType) where S
         self = new{T, S}()
 
         self.nx = _nx
@@ -125,7 +125,7 @@ mutable struct tuple_r{T<:Real, S<:Integer}
     rp::Vector{T}
     rhat::Vector{T}
 
-    function tuple_w(_ns::S) where S
+    function tuple_r(_ns::S, T::DataType) where S
         self = new{T, S}()
 
         self.ns = _ns
@@ -138,7 +138,7 @@ mutable struct tuple_r{T<:Real, S<:Integer}
     end
 end
 
-mutable struct struct_cofficients{T<:Real, S<:Integer}
+mutable struct struct_coefficients{T<:Real, S<:Integer}
     ns::S
     nx::S
     nu::S
@@ -150,7 +150,7 @@ mutable struct struct_cofficients{T<:Real, S<:Integer}
     θ::Matrix{T}
     ζ::Matrix{T}
 
-    function struct_coefficients(_nx::S, _nu::S, _ns::S) where S
+    function struct_coefficients(_nx::S, _nu::S, _ns::S, T::DataType) where S
         self = new{T, S}()
 
         self.nx = _nx
@@ -169,7 +169,7 @@ mutable struct struct_cofficients{T<:Real, S<:Integer}
     end
 end
 
-function init_Q!(_Q::struct_Q, w::tuple_w, con::Vector{T}) where T
+function init_Q!(_Q::struct_Q, w::tuple_w) where T
 
     xN, uN, sN, yN = w
 
@@ -189,20 +189,20 @@ function init_Q!(_Q::struct_Q, w::tuple_w, con::Vector{T}) where T
     _vNx = vNx(xN, uN)
     _vNxx = vNxx(xN, uN)
 
-    _Q.Qx .= lx(xN, uN, con) + fx_T*_vNx
-    _Q.Qx .= lu(xN, uN, con) + fu_T*_vNx
+    _Q.Qx .= lx(xN, uN) + fx_T*_vNx
+    _Q.Qx .= lu(xN, uN) + fu_T*_vNx
 
 
-    _Q.Qxx .= lxx(xN, uN, con) + fx_T*_vNxx*_fx + sum(_vNx[i] * _fxx[i, :, :] for i in 1:_Q.nx)
-    _Q.Qxu .= lxu(xN, uN, con) + fx_T*_vNxx*_fu + sum(_vNx[i] * _fxu[i, :, :] for i in 1:_Q.nx)
-    _Q.Quu .= luu(xN, uN, con) + fu_T*_vNxx*_fu + sum(_vNx[i] * _fuu[i, :, :] for i in 1:_Q.nx)
+    _Q.Qxx .= lxx(xN, uN) + fx_T*_vNxx*_fx + sum(_vNx[i] * _fxx[i, :, :] for i in 1:_Q.nx)
+    _Q.Qxu .= lxu(xN, uN) + fx_T*_vNxx*_fu + sum(_vNx[i] * _fxu[i, :, :] for i in 1:_Q.nx)
+    _Q.Quu .= luu(xN, uN) + fu_T*_vNxx*_fu + sum(_vNx[i] * _fuu[i, :, :] for i in 1:_Q.nx)
 end
 
-φ(x, w::tuple_w, coeff::struct_cofficients) = w.u + coeff.α + coeff.β*(x - w.x)
-ψ(x, w::tuple_w, coeff::struct_cofficients) = w.s + coeff.η + coeff.θ*(x - w.x)
-ξ(x, w::tuple_w, coeff::struct_cofficients) = w.y + coeff.χ + coeff.ζ*(x - w.x)
+φ(x, w::tuple_w, coeff::struct_coefficients) = w.u + coeff.α + coeff.β*(x - w.x)
+ψ(x, w::tuple_w, coeff::struct_coefficients) = w.s + coeff.η + coeff.θ*(x - w.x)
+ξ(x, w::tuple_w, coeff::struct_coefficients) = w.y + coeff.χ + coeff.ζ*(x - w.x)
 
-function compute_coeff!(coeff::struct_cofficients, w::tuple_w, r::tuple_r, Q::struct_Q, μ::Vector{T}) where T<:Real
+function compute_coeff!(coeff::struct_coefficients, w::tuple_w, r::tuple_r, Q::struct_Q, μ::Vector{T}) where T<:Real
     S = diagm(w.s)
     Y = diagm(w.y)
     I = ones(w.ns, w.ns)
@@ -247,7 +247,7 @@ function update_Q!(Q::struct_Q, w::tuple_w, r::tuple_r)
     _Q.Qss .= zeros(Q.ns, Q.ns)
 end
 
-function FFP!(nw::S, list_w::Array{tuple_w, 1}, list_coeff::Array{struct_cofficients, 1}) where S<:Integer
+function FFP!(nw::S, list_w::Array{tuple_w, 1}, list_coeff::Array{struct_coefficients, 1}) where S<:Integer
     x = list_w[1].x
     u = zeros(list_w[1].nu)
     s = zeros(list_w[1].ns)
@@ -267,10 +267,10 @@ function FFP!(nw::S, list_w::Array{tuple_w, 1}, list_coeff::Array{struct_coffici
     
 end
 
-function BFP!(nw::S, list_w::Array{tuple_w, 1}, list_r::Array{tuple_r, 1}, list_coeff::Array{struct_cofficients, 1}, μ::Vector{T}) where{S<:Integer, T<:Real}
+function BFP!(nw::S, list_w::Array{tuple_w{T, S}, 1}, list_r::Array{tuple_r{T, S}, 1}, list_coeff::Array{struct_coefficients{T, S}, 1}, μ::Vector{T}) where{S<:Integer, T<:Real}
     
-    Q = struct_Q(list_w[1].nx, list_w[1].nu, list_w[1].ns)
-    init_Q!(Q, list_w[1], con)
+    Q = struct_Q(list_w[1].nx, list_w[1].nu, list_w[1].ns, Float64)
+    init_Q!(Q, list_w[1])
     compute_coeff!(list_coeff[1], list_w[1], list_r[1], Q, μ)
     for i in 2:nw
         update_Q!(Q, list_w[i], list_r[i])
@@ -278,9 +278,23 @@ function BFP!(nw::S, list_w::Array{tuple_w, 1}, list_r::Array{tuple_r, 1}, list_
     end
 end
 
-function loop(nw::S, list_w::Array{tuple_w, 1}, list_r::Array{tuple_r, 1}, list_coeff::Array{struct_cofficients, 1}, μ::Vector{T}) where{S<:Integer, T<:Real}
-    for i in 1:100
-        FFP!(nw, list_w, list_coeff)
+function loop!(n::S, nw::S, list_w::Array{tuple_w{T, S}, 1}, list_r::Array{tuple_r{T, S}, 1}, list_coeff::Array{struct_coefficients{T, S}, 1}, μ::Vector{T}) where{S<:Integer, T<:Real}
+    for _ in 1:n
         BFP!(nw, list_w, list_r, list_coeff, μ)
+        FFP!(nw, list_w, list_coeff)
     end
 end
+
+function main()
+    nw = 10
+    nx = 3
+    nu = 4
+    ns = 7
+    list_w = [tuple_w(nx, nu, ns, Float64) for _ in 1:nw]
+    list_r = [tuple_r(ns, Float64) for _ in 1:nw]
+    list_coeff = [struct_coefficients(nx, nu, ns, Float64) for _ in 1:nw]
+    μ = ones(ns)
+    loop!(100, nw, list_w, list_r, list_coeff, μ)
+end
+
+main()
