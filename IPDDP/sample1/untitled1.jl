@@ -17,8 +17,8 @@ c(x, u) = begin
         u_tm*(u_tm - 0.01),
     ]
 end
-cx(x::Vector{Real}, u::Vector{Real}) = ForwardDiff.jacobian(x -> c(x, u), x)
-cu(x::Vector{Real}, u::Vector{Real}) = ForwardDiff.jacobian(u -> c(x, u), u)
+cx(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(x -> c(x, u), x)
+cu(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(u -> c(x, u), u)
 
 f(x, u) = begin
     r, v_r, v_t = x
@@ -29,30 +29,30 @@ f(x, u) = begin
         (-v_r*v_t/r + u_tp - u_tm)
     ]
 end
-fx(x::Vector{Real}, u::Vector{Real}) = ForwardDiff.jacobian(x -> f(x, u), x)
-fu(x::Vector{Real}, u::Vector{Real}) = ForwardDiff.jacobian(u -> f(x, u), u)
-fxx(x::Vector{Real}, u::Vector{Real}) = ForwardDiff.jacobian(x -> ForwardDiff.jacobian(x -> f(x, u), x), x)
-fux(x::Vector{Real}, u::Vector{Real}) = ForwardDiff.jacobian(x -> ForwardDiff.jacobian(u -> f(x, u), u), x)
-fuu(x::Vector{Real}, u::Vector{Real}) = ForwardDiff.jacobian(u -> ForwardDiff.jacobian(u -> f(x, u), u), u)
+fx(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(x -> f(x, u), x)
+fu(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(u -> f(x, u), u)
+fxx(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(x -> ForwardDiff.jacobian(x -> f(x, u), x), x)
+fux(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(x -> ForwardDiff.jacobian(u -> f(x, u), u), x)
+fuu(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(u -> ForwardDiff.jacobian(u -> f(x, u), u), u)
 
 l(x, u) = begin
     r, v_r, v_t = x
     u_rp, u_rm, u_tp, u_tm = u
     return u_rp + u_rm + u_tp + u_tm + (u_rp*u_rm + u_tp*u_tm)
 end
-lx(x::Vector{Real}, u::Vector{Real}) = ForwardDiff.gradient(x -> l(x, u), x,)
-lu(x::Vector{Real}, u::Vector{Real}) = ForwardDiff.gradient(u -> l(x, u), u)
-lxx(x::Vector{Real}, u::Vector{Real}) = ForwardDiff.hessian(x -> l(x, u), x)
-lux(x::Vector{Real}, u::Vector{Real}) = ForwardDiff.jacobian(x -> ForwardDiff.gradient(u -> l(x, u), u), x)
-luu(x::Vector{Real}, u::Vector{Real}) = ForwardDiff.hessian(u -> l(x, u), u)
+lx(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.gradient(x -> l(x, u), x,)
+lu(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.gradient(u -> l(x, u), u)
+lxx(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.hessian(x -> l(x, u), x)
+lux(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(x -> ForwardDiff.gradient(u -> l(x, u), u), x)
+luu(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.hessian(u -> l(x, u), u)
 
 lf(x) = sum((x .- [4.0, 0.0, 0.5]).^2.0)
 
-vN(x, u) = begin
+vN(x) = begin
     return lf(x)
 end
-vNx(x::Vector{Real}, u::Vector{Vector{Real}}) = ForwardDiff.gradient(x -> v(x, u), x)
-vNxx(x::Vector{Real}, u::Vector{Vector{Real}}) = ForwardDiff.hessian(x -> v(x, u), x)
+vNx(x::Vector{T}) where T<:Real = ForwardDiff.gradient(x -> v(x, u), x)
+vNxx(x::Vector{T}) where T<:Real = ForwardDiff.hessian(x -> v(x, u), x)
 
 mutable struct struct_Q{T<:Real, S<:Integer}
     ns::S
@@ -171,31 +171,29 @@ end
 
 function init_Q!(_Q::struct_Q, w::tuple_w) where T
 
-    xN, uN, sN, yN = w
-
-    _Q.Qs .= c(xN, uN)
-    _Q.Qsx .= cx(xN, uN)
-    _Q.Qsu .= cu(xN, uN)
+    _Q.Qs .= c(w.x, w.u)
+    _Q.Qsx .= cx(w.x, w.u)
+    _Q.Qsu .= cu(w.x, w.u)
     _Q.Qss .= zeros(_Q.ns, _Q.ns)
 
-    _fx = fx(xN, uN)
-    _fu = fu(xN, uN)
-    fx_T = transpose(fx(xN, uN))
-    fu_T = transpose(fx(xN, uN))
-    _fxx = reshape(fxx(xN, uN), (_Q.nx, _Q.nx, _Q.nx))
-    _fux = reshape(fux(xN, uN), (_Q.nx, _Q.nu, _Q.nx))
-    _fuu = reshape(fuu(xN, uN), (_Q.nx, _Q.nu, _Q.nu))
+    _fx = fx(w.x, w.u)
+    _fu = fu(w.x, w.u)
+    fx_T = transpose(fx(w.x, w.u))
+    fu_T = transpose(fx(w.x, w.u))
+    _fxx = reshape(fxx(w.x, w.u), (_Q.nx, _Q.nx, _Q.nx))
+    _fux = reshape(fux(w.x, w.u), (_Q.nx, _Q.nu, _Q.nx))
+    _fuu = reshape(fuu(w.x, w.u), (_Q.nx, _Q.nu, _Q.nu))
 
-    _vNx = vNx(xN, uN)
-    _vNxx = vNxx(xN, uN)
+    _vNx = vNx(w.x)
+    _vNxx = vNxx(w.x)
 
-    _Q.Qx .= lx(xN, uN) + fx_T*_vNx
-    _Q.Qx .= lu(xN, uN) + fu_T*_vNx
+    _Q.Qx .= lx(w.x, w.u) + fx_T*_vNx
+    _Q.Qx .= lu(w.x, w.u) + fu_T*_vNx
 
 
-    _Q.Qxx .= lxx(xN, uN) + fx_T*_vNxx*_fx + sum(_vNx[i] * _fxx[i, :, :] for i in 1:_Q.nx)
-    _Q.Qxu .= lxu(xN, uN) + fx_T*_vNxx*_fu + sum(_vNx[i] * _fxu[i, :, :] for i in 1:_Q.nx)
-    _Q.Quu .= luu(xN, uN) + fu_T*_vNxx*_fu + sum(_vNx[i] * _fuu[i, :, :] for i in 1:_Q.nx)
+    _Q.Qxx .= lxx(w.x, w.u) + fx_T*_vNxx*_fx + sum(_vNx[i] * _fxx[i, :, :] for i in 1:_Q.nx)
+    _Q.Qxu .= lxu(w.x, w.u) + fx_T*_vNxx*_fu + sum(_vNx[i] * _fxu[i, :, :] for i in 1:_Q.nx)
+    _Q.Quu .= luu(w.x, w.u) + fu_T*_vNxx*_fu + sum(_vNx[i] * _fuu[i, :, :] for i in 1:_Q.nx)
 end
 
 φ(x, w::tuple_w, coeff::struct_coefficients) = w.u + coeff.α + coeff.β*(x - w.x)
