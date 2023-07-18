@@ -11,10 +11,14 @@ c(x, u) = begin
         -r,
         -v_r,
         -v_t,
-        u_rp*(u_rp - 0.01),
-        u_rm*(u_rm - 0.01),
-        u_tp*(u_tp - 0.01),
-        u_tm*(u_tm - 0.01),
+        -u_rp,
+        u_rp - 0.01,
+        -u_rm,
+        u_rm - 0.01,
+        -u_tp,
+        u_tp - 0.01,
+        -u_tm,
+        u_tm - 0.01,
     ]
 end
 cx(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(x -> c(x, u), x)
@@ -300,22 +304,48 @@ end
 function check_constraints(w::tuple_w{T, S}) where {S<:Integer, T<:Real}
     w.s[:] .= max.(1E-3::T, w.s)
     w.y[:] .= max.(1E-3::T, w.y)
-    w.u[:] .= max.(1E-3::T, min.(0.01, w.u))
+    w.u[:] .= max.(0.0::T, min.(0.01, w.u))
     w.x[:] .= max.(1E-3::T, w.x)
 end
 
 function loop!(n::S, nw::S, list_w::Array{tuple_w{T, S}, 1}, list_r::Array{tuple_r{T, S}, 1}, list_coeff::Array{struct_coefficients{T, S}, 1}, μ::Vector{T}) where {S<:Integer, T<:Real}
+    
+    wrap_plot_graph(0, list_w, nw)
     for k in 1:n
         BFP!(nw, list_w, list_r, list_coeff, μ)
         FFP!(nw, list_w, list_coeff)
-        plot_graph(
-            k, 
-            [list_w[i].x[j] for j in 1:list_w[1].nx, i in 1:nw],
-            [list_w[i].u[j] for j in 1:list_w[1].nu, i in 1:nw], 
-            [list_w[i].s[j] for j in 1:list_w[1].ns, i in 1:nw], 
-            [list_w[i].y[j] for j in 1:list_w[1].ns, i in 1:nw], 
-            [0.01 * i for i in 1:nw]
-        )
+        update_μ!(μ, 5.0)
+        wrap_plot_graph(k, list_w, nw)
+    end
+end
+
+function wrap_plot_graph(idx, list_w::Array{tuple_w{T, S}, 1}, nw::S) where {S<:Integer, T<:Real}
+    plot_graph(
+        idx, 
+        [list_w[i].x[j] for j in 1:list_w[1].nx, i in 1:nw],
+        [list_w[i].u[j] for j in 1:list_w[1].nu, i in 1:nw], 
+        [list_w[i].s[j] for j in 1:list_w[1].ns, i in 1:nw], 
+        [list_w[i].y[j] for j in 1:list_w[1].ns, i in 1:nw], 
+        [0.01 * i for i in 1:nw]
+    )
+end
+
+function init_μ!(μ::Vector{T}, list_w::Array{tuple_w{T, S}, 1}, nw::S, ns::S) where {S<:Integer, T<:Real}
+    μ[:] .= (sum(l(list_w[i].x, list_w[i].u) for i in 1:nw)/nw/ns + lf(list_w[end].x))*zeros(ns)
+end
+
+function update_μ!(μ::Vector{T}, κ::T) where T<:Real
+    μ[:] .= min.(μ/κ, μ.^1.2)
+end
+
+function init_xu!(list_w::Array{tuple_w{T, S}, 1}, nw::S, bx::Tuple{Array{T, 1}, Array{T, 1}}, bu::Tuple{Array{T, 1}, Array{T, 1}}) where {S<:Integer, T<:Real}
+    bx0, bxf = bx
+    bx0f = bxf .- bx0
+    bu0, buf = bu
+    bu0f = buf .- bu0
+    for i in 1:nw
+        list_w[i].x .= bx0f*i/nw .+ bx0
+        list_w[i].u .= bu0f*i/nw .+ bu0
     end
 end
 
@@ -323,11 +353,15 @@ function main()
     nw::Int64 = 5500
     nx::Int64 = 3
     nu::Int64 = 4
-    ns::Int64 = 7
+    ns::Int64 = 11
     list_w::Array{tuple_w{Float64, Int64}, 1} = [tuple_w(nx, nu, ns, Float64) for _ in 1:nw]
     list_r::Array{tuple_r{Float64, Int64}, 1} = [tuple_r(ns, Float64) for _ in 1:nw]
     list_coeff::Array{struct_coefficients{Float64, Int64}, 1} = [struct_coefficients(nx, nu, ns, Float64) for _ in 1:nw]
-    μ::Vector{Float64} = ones(ns)
+    μ::Vector{Float64} = zeros(ns)
+
+    init_xu!(list_w, nw, ([1.0, 0.0, 1.0], [4.0, 0.0, 0.5]), ([0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]))
+    init_μ!(μ, list_w, nw, ns)
+
     loop!(10, nw, list_w, list_r, list_coeff, μ)
 end
 
