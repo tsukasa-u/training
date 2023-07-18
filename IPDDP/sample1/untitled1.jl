@@ -171,23 +171,23 @@ mutable struct struct_coefficients{T<:Real, S<:Integer}
     end
 end
 
-function init_Q!(_Q::struct_Q, w::tuple_w)
+function init_Q!(_Q::struct_Q{T, S}, w::tuple_w{T, S}) where {T<:Real, S<:Integer}
 
     _Q.Qs[:] .= c(w.x, w.u)
     _Q.Qsx[:, :] .= cx(w.x, w.u)
     _Q.Qsu[:, :] .= cu(w.x, w.u)
     _Q.Qss[:, :] .= zeros(_Q.ns, _Q.ns)
 
-    _fx = fx(w.x, w.u)
-    _fu = fu(w.x, w.u)
-    fx_T = transpose(_fx)
-    fu_T = transpose(_fu)
-    _fxx = reshape(fxx(w.x, w.u), (_Q.nx, _Q.nx, _Q.nx))
-    _fux = reshape(fux(w.x, w.u), (_Q.nx, _Q.nu, _Q.nx))
-    _fuu = reshape(fuu(w.x, w.u), (_Q.nx, _Q.nu, _Q.nu))
+    _fx::Matrix{T} = fx(w.x, w.u)
+    _fu::Matrix{T} = fu(w.x, w.u)
+    fx_T::Matrix{T} = transpose(_fx)
+    fu_T::Matrix{T} = transpose(_fu)
+    _fxx::Array{T, 3} = reshape(fxx(w.x, w.u), (_Q.nx, _Q.nx, _Q.nx))
+    _fux::Array{T, 3} = reshape(fux(w.x, w.u), (_Q.nx, _Q.nu, _Q.nx))
+    _fuu::Array{T, 3} = reshape(fuu(w.x, w.u), (_Q.nx, _Q.nu, _Q.nu))
 
-    _vNx = vNx(w.x)
-    _vNxx = vNxx(w.x)
+    _vNx::Vector{T} = vNx(w.x)
+    _vNxx::Matrix{T} = vNxx(w.x)
 
     _Q.Qx[:] .= lx(w.x, w.u) + fx_T*_vNx
     _Q.Qu[:] .= lu(w.x, w.u) + fu_T*_vNx
@@ -203,17 +203,17 @@ end
 ξ(x, w::tuple_w, coeff::struct_coefficients) = w.y + coeff.χ + coeff.ζ*(x - w.x)
 
 function compute_coeff!(coeff::struct_coefficients, w::tuple_w, r::tuple_r, Q::struct_Q, μ::Vector{T}) where T<:Real
-    S = diagm(w.s)
-    Y = diagm(w.y)
-    I = ones(w.ns, w.ns)
-    zero_us = zeros(w.nu, w.ns)
-    zero_su = zeros(w.ns, w.nu)
-    zero_ss = zeros(w.ns, w.ns)
-    zero_sx = zeros(w.ns, w.nx)
+    _S::Matrix{T} = diagm(w.s)
+    Y::Matrix{T} = diagm(w.y)
+    # I = ones(w.ns, w.ns)
+    # zero_us = zeros(w.nu, w.ns)
+    # zero_su = zeros(w.ns, w.nu)
+    # zero_ss = zeros(w.ns, w.ns)
+    # zero_sx = zeros(w.ns, w.nx)
 
     r.rp[:] .= c(w.x, w.u) + w.y
-    r.rd[:] .= S*w.y - μ
-    r.rhat[:] .= S*r.rp - r.rd
+    r.rd[:] .= _S*w.y - μ
+    r.rhat[:] .= _S*r.rp - r.rd
 
     # P = [Q.Quu transpose(Q.Qsu) zero_us; Q.Qsu zero_ss I; zero_su Y S]
 
@@ -227,17 +227,17 @@ function compute_coeff!(coeff::struct_coefficients, w::tuple_w, r::tuple_r, Q::s
     # coeff.θ .= ret[(w.nx + 1):(w.nx + w.nu), 2:end]
     # coeff.ζ .= ret[(w.nx + w.nu + 1):end, 2:end]
 
-    SY_1 = S*inv(Y)
-    Y_1 = inv(Y)
+    Y_1::Matrix{T} = inv(Y)
+    SY_1::Matrix{T} = _S*Y_1
 
-    R = (Q.Quu + transpose(Q.Qsu)*SY_1*Q.Qsu)
-    ret = -inv(R)*[Q.Qu + transpose(Q.Qsu)*Y_1*r.rhat transpose(Q.Qxu) + transpose(Q.Qsu)*SY_1*Q.Qsx]
+    R::Matrix{T} = (Q.Quu + transpose(Q.Qsu)*SY_1*Q.Qsu)
+    ret::Matrix{T} = -inv(R)*[Q.Qu + transpose(Q.Qsu)*Y_1*r.rhat transpose(Q.Qxu) + transpose(Q.Qsu)*SY_1*Q.Qsx]
     
     coeff.α[:] .= vec(ret[:, 1])
 
     coeff.β[:, :] .= ret[:, 2:end]
 
-    coeff.η[:] .= Y_1*(r.rhat + S*Q.Qsu*coeff.α)
+    coeff.η[:] .= Y_1*(r.rhat + _S*Q.Qsu*coeff.α)
     coeff.θ[:, :] .= SY_1*(Q.Qsx + Q.Qsu*coeff.β)
 
     coeff.χ[:] .= -r.rp - Q.Qsu*coeff.α
@@ -245,59 +245,64 @@ function compute_coeff!(coeff::struct_coefficients, w::tuple_w, r::tuple_r, Q::s
 
 end
 
-function update_Q!(Q::struct_Q, w::tuple_w, r::tuple_r)
-    Y_1 = inv(diagm(w.y))
-    S = diagm(w.s)
+function update_Q!(Q::struct_Q{T, S}, w::tuple_w{T, S}, r::tuple_r{T, S}) where {T<:Real, S<:Integer}
+    Y_1::Matrix{T} = inv(diagm(w.y))
+    _S::Matrix{T} = diagm(w.s)
+    SY_1::Matrix{T} = _S*Y_1
 
-    Qsx_T = transpose(Q.Qsx)
-    Qsu_T = transpose(Q.Qsu)
+    Qsx_T::Matrix{T} = transpose(Q.Qsx)
+    Qsu_T::Matrix{T} = transpose(Q.Qsu)
 
     Q.Qx[:] .+= Qsx_T*Y_1*r.rhat
     Q.Qu[:] .+= Qsu_T*Y_1*r.rhat
-    Q.Qxx[:, :] .+= Qsx_T*Y_1*S*Q.Qsx
-    Q.Qxu[:, :] .+= Qsx_T*Y_1*S*Q.Qsu
-    Q.Quu[:, :] .+= Qsu_T*Y_1*S*Q.Qsu
+    Q.Qxx[:, :] .+= Qsx_T*SY_1*Q.Qsx
+    Q.Qxu[:, :] .+= Qsx_T*SY_1*Q.Qsu
+    Q.Quu[:, :] .+= Qsu_T*SY_1*Q.Qsu
 
-    Q.Qs[:] .= c(w.x, w.u)
-    Q.Qsx[:, :] .= cx(w.x, w.u)
-    Q.Qsu[:, :] .= cu(w.x, w.u)
-    Q.Qss[:, :] .= zeros(Q.ns, Q.ns)
+    # Q.Qs[:] .= c(w.x, w.u)
+    # Q.Qsx[:, :] .= cx(w.x, w.u)
+    # Q.Qsu[:, :] .= cu(w.x, w.u)
+    # Q.Qss[:, :] .= zeros(Q.ns, Q.ns)
 end
 
 function FFP!(nw::S, list_w::Array{tuple_w{T, S}, 1}, list_coeff::Array{struct_coefficients{T, S}, 1}) where {S<:Integer, T<:Real}
-    x = list_w[1].x
-    u = zeros(list_w[1].nu)
-    s = zeros(list_w[1].ns)
-    y = zeros(list_w[1].ns)
+    x::Vector{T} = list_w[1].x
+    u::Vector{T} = zeros(list_w[1].nu)
+    s::Vector{T} = zeros(list_w[1].ns)
+    y::Vector{T} = zeros(list_w[1].ns)
     for i in 1:nw
-        u .= φ(x, list_w[i], list_coeff[i])
-        s .= ψ(x, list_w[i], list_coeff[i])
-        y .= ξ(x, list_w[i], list_coeff[i])
+        u[:] .= φ(x, list_w[i], list_coeff[i])
+        s[:] .= ψ(x, list_w[i], list_coeff[i])
+        y[:] .= ξ(x, list_w[i], list_coeff[i])
 
         list_w[i].u[:] .= u
         list_w[i].s[:] .= s
         list_w[i].y[:] .= y
         list_w[i].x[:] .= x
 
-        x .= f(x, u)
+        check_constraints(list_w[i])
+
+        x[:] .= f(x, u)
     end
     
 end
 
 function BFP!(nw::S, list_w::Array{tuple_w{T, S}, 1}, list_r::Array{tuple_r{T, S}, 1}, list_coeff::Array{struct_coefficients{T, S}, 1}, μ::Vector{T}) where {S<:Integer, T<:Real}
     
-    Q = struct_Q(list_w[1].nx, list_w[1].nu, list_w[1].ns, Float64)
-    init_Q!(Q, list_w[1])
-    compute_coeff!(list_coeff[1], list_w[1], list_r[1], Q, μ)
-    for i in 2:nw
+    Q::struct_Q = struct_Q(list_w[1].nx, list_w[1].nu, list_w[1].ns, Float64)
+    for i in 1:nw
+        init_Q!(Q, list_w[i])
         update_Q!(Q, list_w[i], list_r[i])
         compute_coeff!(list_coeff[i], list_w[i], list_r[i], Q, μ)
     end
 end
 
-# function check_constraints(nw::S, list_w::Array{tuple_w{T, S}, 1}, list_r::Array{tuple_r{T, S}, 1})
-
-# end
+function check_constraints(w::tuple_w{T, S}) where {S<:Integer, T<:Real}
+    w.s[:] .= max.(1E-3::T, w.s)
+    w.y[:] .= max.(1E-3::T, w.y)
+    w.u[:] .= max.(1E-3::T, min.(0.01, w.u))
+    w.x[:] .= max.(1E-3::T, w.x)
+end
 
 function loop!(n::S, nw::S, list_w::Array{tuple_w{T, S}, 1}, list_r::Array{tuple_r{T, S}, 1}, list_coeff::Array{struct_coefficients{T, S}, 1}, μ::Vector{T}) where {S<:Integer, T<:Real}
     for k in 1:n
@@ -315,14 +320,14 @@ function loop!(n::S, nw::S, list_w::Array{tuple_w{T, S}, 1}, list_r::Array{tuple
 end
 
 function main()
-    nw = 5500
-    nx = 3
-    nu = 4
-    ns = 7
-    list_w = [tuple_w(nx, nu, ns, Float64) for _ in 1:nw]
-    list_r = [tuple_r(ns, Float64) for _ in 1:nw]
-    list_coeff = [struct_coefficients(nx, nu, ns, Float64) for _ in 1:nw]
-    μ = ones(ns)
+    nw::Int64 = 5500
+    nx::Int64 = 3
+    nu::Int64 = 4
+    ns::Int64 = 7
+    list_w::Array{tuple_w{Float64, Int64}, 1} = [tuple_w(nx, nu, ns, Float64) for _ in 1:nw]
+    list_r::Array{tuple_r{Float64, Int64}, 1} = [tuple_r(ns, Float64) for _ in 1:nw]
+    list_coeff::Array{struct_coefficients{Float64, Int64}, 1} = [struct_coefficients(nx, nu, ns, Float64) for _ in 1:nw]
+    μ::Vector{Float64} = ones(ns)
     loop!(10, nw, list_w, list_r, list_coeff, μ)
 end
 
@@ -348,7 +353,6 @@ function plot_graph(index, plot_x, plot_u, plot_s, plot_y, plot_t)
     plots_s = Plots.plot(
         plot_t, 
         [ plot_s[i, :] for i in 1:7], 
-        label=["s$i" for i in 1:7],
         xlabel = "t",
         st=:scatter
     )
@@ -356,7 +360,6 @@ function plot_graph(index, plot_x, plot_u, plot_s, plot_y, plot_t)
     plots_y = Plots.plot(
         plot_t, 
         [ plot_y[i, :] for i in 1:7], 
-        label=["y$i" for i in 1:7],
         xlabel = "t",
         st=:scatter
     )
