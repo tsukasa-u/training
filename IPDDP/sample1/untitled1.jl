@@ -5,33 +5,31 @@ using CPUTime
 
 
 c(x, u) = begin
-    r, v_r, v_t = x
-    u_rp, u_rm, u_tp, u_tm = u
+    rx, ry, ϕ = x
+    u_, = u
     return [
-        -r,
-        -v_r,
-        -v_t,
-        -u_rp,
-        u_rp - 0.01,
-        -u_rm,
-        u_rm - 0.01,
-        -u_tp,
-        u_tp - 0.01,
-        -u_tm,
-        u_tm - 0.01,
+        u_ - 1.5,
+        -u_ - 1.5,
+        ry - 1.0,
+        -ry - 1.0,
+        1.0 - ((rx + 5.0)^2 + (ry + 1.0)^2),
+        0.5 - ((rx + 8.0)^2 + (ry - 0.2)^2),
+        1.5 - ((rx + 2.5)^2 + (ry - 1.0)^2),
     ]
 end
 cx(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(x -> c(x, u), x)
 cu(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(u -> c(x, u), u)
 
 f(x, u) = begin
-    r, v_r, v_t = x
-    u_rp, u_rm, u_tp, u_tm = u
+    rx, ry, ϕ = x
+    u_, = u
+    h = 0.1
+    v = 1.5
     return [
-        (v_r),
-        (v_t^2.0/r - 1.0/r^2.0 + u_rp - u_rm),
-        (-v_r*v_t/r + u_tp - u_tm)
-    ]*0.01 + x
+        h*v*cos(ϕ),
+        h*v*sin(ϕ),
+        h*u_
+    ] + x
 end
 fx(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(x -> f(x, u), x)
 fu(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(u -> f(x, u), u)
@@ -41,9 +39,9 @@ fux(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(x -> Forwar
 fuu(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(u -> ForwardDiff.jacobian(u -> f(x, u), u), u)
 
 l(x, u) = begin
-    r, v_r, v_t = x
-    u_rp, u_rm, u_tp, u_tm = u
-    return u_rp + u_rm + u_tp + u_tm + (u_rp*u_rm + u_tp*u_tm)
+    rx, ry, ϕ = x
+    u_, = u
+    return 0.1*(rx^2+ry^2+ϕ^2+0.1*u_^2)
 end
 lx(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.gradient(x -> l(x, u), x)
 lu(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.gradient(u -> l(x, u), u)
@@ -52,7 +50,10 @@ lux(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(x -> Forwar
 # lxu(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(u -> ForwardDiff.gradient(x -> l(x, u), x), u)
 luu(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.hessian(u -> l(x, u), u)
 
-lf(x) = sum((x .- [4.0, 0.0, 0.5]).^2.0)
+lf(x) = begin
+    rx, ry, ϕ = x
+    return 0.1*(rx^2+ry^2+ϕ^2)
+end
 
 vN(x) = begin
     return lf(x)
@@ -350,16 +351,16 @@ function init_xu!(list_w::Array{tuple_w{T, S}, 1}, nw::S, bx::Tuple{Array{T, 1},
 end
 
 function main()
-    nw::Int64 = 5500
+    nw::Int64 = 600
     nx::Int64 = 3
-    nu::Int64 = 4
-    ns::Int64 = 11
+    nu::Int64 = 1
+    ns::Int64 = 7
     list_w::Array{tuple_w{Float64, Int64}, 1} = [tuple_w(nx, nu, ns, Float64) for _ in 1:nw]
     list_r::Array{tuple_r{Float64, Int64}, 1} = [tuple_r(ns, Float64) for _ in 1:nw]
     list_coeff::Array{struct_coefficients{Float64, Int64}, 1} = [struct_coefficients(nx, nu, ns, Float64) for _ in 1:nw]
     μ::Vector{Float64} = zeros(ns)
 
-    init_xu!(list_w, nw, ([1.0, 0.0, 1.0], [4.0, 0.0, 0.5]), ([0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]))
+    init_xu!(list_w, nw, ([-10.0, 0.0, 0.0], [-10.0, 0.0, 0.0]), ([0.0], [0.0]))
     init_μ!(μ, list_w, nw, ns)
 
     loop!(10, nw, list_w, list_r, list_coeff, μ)
@@ -371,15 +372,15 @@ function plot_graph(index, plot_x, plot_u, plot_s, plot_y, plot_t)
     plots_x = Plots.plot(
         plot_t[:], 
         [ plot_x[1, :] plot_x[2, :] plot_x[3, :] ], 
-        label=["r" "v_r" "v_t"],
+        label=["rx" "ry" "ϕ"],
         xlabel = "t",
         st=:scatter,
     )
 
     plots_u = Plots.plot(
         plot_t, 
-        [ plot_u[1, :].-plot_u[2, :] plot_u[3, :].-plot_u[4, :] ], 
-        label=["u_r" "u_t"],
+        [ plot_u[1, :] ], 
+        label=["u"],
         xlabel = "t",
         st=:scatter
     )
