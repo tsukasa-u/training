@@ -209,7 +209,7 @@ function init_V!(_V::struct_V{T, S}, w::tuple_w{T, S}) where {T<:Real, S<:Intege
 
 end
 
-function init_Q!(_Q::struct_Q{T, S}, _V::struct_Q{T, S}, w::tuple_w{T, S}) where {T<:Real, S<:Integer}
+function compute_Q!(_Q::struct_Q{T, S}, _V::struct_V{T, S}, w::tuple_w{T, S}) where {T<:Real, S<:Integer}
 
     _Q.Qs[:] .= c(w.x, w.u)
     _Q.Qsx[:, :] .= cx(w.x, w.u)
@@ -291,14 +291,15 @@ function compute_coeff!(coeff::struct_coefficients, w::tuple_w, r::tuple_r, Q::s
 
 end
 
-function update_V!(Q::struct_Q{T, S}, V::struct_Q{T, S},  w::tuple_w{T, S}) where {T<:Real, S<:Integer}
+function update_V!(Q::struct_Q{T, S}, V::struct_V{T, S},  coeff::struct_coefficients{T, S}) where {T<:Real, S<:Integer}
 
     # _V.ΔV += 0.0
-    _V.Vx[:] .= vNx(w.x)
-    _V.Vxx[:, :] .= vNxx(w.x)
+    _β_T = transpose(coeff.β)
+    V.Vx[:] .= Q.Qx + _β_T*Q.Qu + _β_T*Q.Quu*coeff.α + Q.Qxu*coeff.α
+    V.Vxx[:, :] .= Q.Qxx + Q.Qxu*coeff.β + _β_T*transpose(Q.Qxu) + _β_T*Q.Quu*coeff.β
 end
 
-function compute_Q!(Q::struct_Q{T, S}, V::struct_Q{T, S},  w::tuple_w{T, S}, r::tuple_r{T, S}) where {T<:Real, S<:Integer}
+function update_Q!(Q::struct_Q{T, S}, w::tuple_w{T, S}, r::tuple_r{T, S}) where {T<:Real, S<:Integer}
     Y_1::Matrix{T} = inv(diagm(w.y))
     _S::Matrix{T} = diagm(w.s)
     SY_1::Matrix{T} = _S*Y_1
@@ -344,12 +345,12 @@ function BFP!(nw::S, list_w::Array{tuple_w{T, S}, 1}, list_r::Array{tuple_r{T, S
     
     Q::struct_Q = struct_Q(list_w[1].nx, list_w[1].nu, list_w[1].ns, T)
     V::struct_V = struct_V(list_w[1].nx, T)
-    init_V!(V, list_w[1])
+    init_V!(V, list_w[nw])
     for i in reverse(1:nw)
-        init_Q!(Q, V, list_w[i])
-        compute_Q!(Q, V, list_w[i], list_r[i])
+        compute_Q!(Q, V, list_w[i])
+        update_Q!(Q, list_w[i], list_r[i])
         compute_coeff!(list_coeff[i], list_w[i], list_r[i], Q, μ)
-        update_V!(Q, V, list_w[i])
+        update_V!(Q, V, list_coeff[i])
     end
 end
 
