@@ -19,6 +19,10 @@ c(x, u) = begin
 end
 cx(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(x -> c(x, u), x)
 cu(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(u -> c(x, u), u)
+cxx(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(x -> ForwardDiff.jacobian(x -> c(x, u), x), x)
+cux(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(x -> ForwardDiff.jacobian(u -> c(x, u), u), x)
+# fxu(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(u -> ForwardDiff.jacobian(x -> c(x, u), x), u)
+cuu(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(u -> ForwardDiff.jacobian(u -> c(x, u), u), u)
 
 f(x, u) = begin
     rx, ry, ϕ = x
@@ -60,6 +64,27 @@ vN(x) = begin
 end
 vNx(x::Vector{T}) where T<:Real = ForwardDiff.gradient(x -> vN(x), x)
 vNxx(x::Vector{T}) where T<:Real = ForwardDiff.hessian(x -> vN(x), x)
+
+mutable struct struct_V{T<:Real, S<:Integer}
+    nx::S
+    
+    ΔV::T
+
+    Vx::Vector{T}
+
+    Vxx::Matrix{T}
+
+    function struct_V(_nx::S, T::DataType) where S
+        self = new{T, S}()
+
+        self.nx = _nx
+
+        self.Vx = zeros(_nx)
+        self.Vxx = zeros(_nx, _nx)
+
+        return self
+    end
+end
 
 mutable struct struct_Q{T<:Real, S<:Integer}
     ns::S
@@ -176,7 +201,15 @@ mutable struct struct_coefficients{T<:Real, S<:Integer}
     end
 end
 
-function init_Q!(_Q::struct_Q{T, S}, w::tuple_w{T, S}) where {T<:Real, S<:Integer}
+function init_V!(_V::struct_V{T, S}, w::tuple_w{T, S}) where {T<:Real, S<:Integer}
+
+    # _V.ΔV = 0.0
+    _V.Vx[:] .= vNx(w.x)
+    _V.Vxx[:, :] .= vNxx(w.x)
+
+end
+
+function init_Q!(_Q::struct_Q{T, S}, _V::struct_Q{T, S}, w::tuple_w{T, S}) where {T<:Real, S<:Integer}
 
     _Q.Qs[:] .= c(w.x, w.u)
     _Q.Qsx[:, :] .= cx(w.x, w.u)
@@ -185,22 +218,30 @@ function init_Q!(_Q::struct_Q{T, S}, w::tuple_w{T, S}) where {T<:Real, S<:Intege
 
     _fx::Matrix{T} = fx(w.x, w.u)
     _fu::Matrix{T} = fu(w.x, w.u)
-    fx_T::Matrix{T} = transpose(_fx)
-    fu_T::Matrix{T} = transpose(_fu)
+    _fx_T::Matrix{T} = transpose(_fx)
+    _fu_T::Matrix{T} = transpose(_fu)
     _fxx::Array{T, 3} = reshape(fxx(w.x, w.u), (_Q.nx, _Q.nx, _Q.nx))
     _fux::Array{T, 3} = reshape(fux(w.x, w.u), (_Q.nx, _Q.nu, _Q.nx))
     _fuu::Array{T, 3} = reshape(fuu(w.x, w.u), (_Q.nx, _Q.nu, _Q.nu))
+    _cxx::Array{T, 3} = reshape(cxx(w.x, w.u), (_Q.ns, _Q.nx, _Q.nx))
+    _cux::Array{T, 3} = reshape(cux(w.x, w.u), (_Q.ns, _Q.nu, _Q.nx))
+    _cuu::Array{T, 3} = reshape(cuu(w.x, w.u), (_Q.ns, _Q.nu, _Q.nu))
 
-    _vNx::Vector{T} = vNx(w.x)
-    _vNxx::Matrix{T} = vNxx(w.x)
+    _Q.Qx[:] .= lx(w.x, w.u) + _fx_T*_V.Vx
+    _Q.Qu[:] .= lu(w.x, w.u) + _fu_T*_V.Vx
 
-    _Q.Qx[:] .= lx(w.x, w.u) + fx_T*_vNx
-    _Q.Qu[:] .= lu(w.x, w.u) + fu_T*_vNx
+    _Q.Qxx[:, :] .=           lxx(w.x, w.u)  + _fx_T*_V.Vxx*_fx + sum(_V.Vx[i] *           _fxx[i, :, :]  for i in 1:_Q.nx)
+    # _Q.Qxu[:, :] .= lxu(w.x, w.u) + _fx_T*_V.Vxx*_fu + sum(_V.Vx[i] * _fxu[i, :, :] for i in 1:_Q.nx)
+    _Q.Qxu[:, :] .= transpose(lux(w.x, w.u)) + _fx_T*_V.Vxx*_fu + sum(_V.Vx[i] * transpose(_fux[i, :, :]) for i in 1:_Q.nx)
+    _Q.Quu[:, :] .=           luu(w.x, w.u)  + _fu_T*_V.Vxx*_fu + sum(_V.Vx[i] *           _fuu[i, :, :]  for i in 1:_Q.nx)
 
-    _Q.Qxx[:, :] .= lxx(w.x, w.u) + fx_T*_vNxx*_fx + sum(_vNx[i] * _fxx[i, :, :] for i in 1:_Q.nx)
-    # _Q.Qxu[:, :] .= lxu(w.x, w.u) + fx_T*_vNxx*_fu + sum(_vNx[i] * _fxu[i, :, :] for i in 1:_Q.nx)
-    _Q.Qxu[:, :] .= transpose(lux(w.x, w.u)) + fx_T*_vNxx*_fu + sum(_vNx[i] * transpose(_fux[i, :, :]) for i in 1:_Q.nx)
-    _Q.Quu[:, :] .= luu(w.x, w.u) + fu_T*_vNxx*_fu + sum(_vNx[i] * _fuu[i, :, :] for i in 1:_Q.nx)
+
+    _Q.Qx[:] .+= transpose(_Q.Qsx)*w.s
+    _Q.Qu[:] .+= transpose(_Q.Qsu)*w.s
+    _Q.Qxx[:, :] .+= sum(w.s[i] *           _cxx[i, :, :]  for i in 1:_Q.ns)
+    _Q.Qxu[:, :] .+= sum(w.s[i] * transpose(_cux[i, :, :]) for i in 1:_Q.ns)
+    _Q.Quu[:, :] .+= sum(w.s[i] *           _cuu[i, :, :]  for i in 1:_Q.ns)
+
 end
 
 φ(x, w::tuple_w, coeff::struct_coefficients) = w.u + coeff.α + coeff.β*(x - w.x)
@@ -250,7 +291,14 @@ function compute_coeff!(coeff::struct_coefficients, w::tuple_w, r::tuple_r, Q::s
 
 end
 
-function update_Q!(Q::struct_Q{T, S}, w::tuple_w{T, S}, r::tuple_r{T, S}) where {T<:Real, S<:Integer}
+function update_V!(Q::struct_Q{T, S}, V::struct_Q{T, S},  w::tuple_w{T, S}) where {T<:Real, S<:Integer}
+
+    # _V.ΔV += 0.0
+    _V.Vx[:] .= vNx(w.x)
+    _V.Vxx[:, :] .= vNxx(w.x)
+end
+
+function compute_Q!(Q::struct_Q{T, S}, V::struct_Q{T, S},  w::tuple_w{T, S}, r::tuple_r{T, S}) where {T<:Real, S<:Integer}
     Y_1::Matrix{T} = inv(diagm(w.y))
     _S::Matrix{T} = diagm(w.s)
     SY_1::Matrix{T} = _S*Y_1
@@ -294,11 +342,14 @@ end
 
 function BFP!(nw::S, list_w::Array{tuple_w{T, S}, 1}, list_r::Array{tuple_r{T, S}, 1}, list_coeff::Array{struct_coefficients{T, S}, 1}, μ::Vector{T}) where {S<:Integer, T<:Real}
     
-    Q::struct_Q = struct_Q(list_w[1].nx, list_w[1].nu, list_w[1].ns, Float64)
-    for i in 1:nw
-        init_Q!(Q, list_w[i])
-        update_Q!(Q, list_w[i], list_r[i])
+    Q::struct_Q = struct_Q(list_w[1].nx, list_w[1].nu, list_w[1].ns, T)
+    V::struct_V = struct_V(list_w[1].nx, T)
+    init_V!(V, list_w[1])
+    for i in reverse(1:nw)
+        init_Q!(Q, V, list_w[i])
+        compute_Q!(Q, V, list_w[i], list_r[i])
         compute_coeff!(list_coeff[i], list_w[i], list_r[i], Q, μ)
+        update_V!(Q, V, list_w[i])
     end
 end
 
