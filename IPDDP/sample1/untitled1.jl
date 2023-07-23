@@ -320,7 +320,7 @@ function update_Q!(Q::struct_Q{T, S}, w::tuple_w{T, S}, r::tuple_r{T, S}) where 
 end
 
 function FFP!(nw::S, list_w::Array{tuple_w{T, S}, 1}, list_coeff::Array{struct_coefficients{T, S}, 1}) where {S<:Integer, T<:Real}
-    x::Vector{T} = list_w[1].x
+    x::Vector{T} = copy(list_w[1].x)
     u::Vector{T} = zeros(list_w[1].nu)
     s::Vector{T} = zeros(list_w[1].ns)
     y::Vector{T} = zeros(list_w[1].ns)
@@ -334,7 +334,7 @@ function FFP!(nw::S, list_w::Array{tuple_w{T, S}, 1}, list_coeff::Array{struct_c
         list_w[i].y[:] .= y
         list_w[i].x[:] .= x
 
-        check_constraints(list_w[i])
+        # check_constraints(list_w[i])
 
         x[:] .= f(x, u)
     end
@@ -423,8 +423,8 @@ function plot_graph(index, plot_x, plot_u, plot_s, plot_y, plot_t)
 
     plots_x = Plots.plot(
         plot_t[:], 
-        [ plot_x[1, :] plot_x[2, :] plot_x[3, :] ], 
-        label=["rx" "ry" "ϕ"],
+        [ plot_x[1, :] plot_x[2, :]], 
+        label=["rx" "ry" ],
         xlabel = "t",
         st=:scatter,
     )
