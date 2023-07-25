@@ -12,9 +12,9 @@ c(x, u) = begin
         -u_ - 1.5,
         ry - 1.0,
         -ry - 1.0,
-        1.0 - ((rx + 5.0)^2 + (ry + 1.0)^2),
-        0.5 - ((rx + 8.0)^2 + (ry - 0.2)^2),
-        1.5 - ((rx + 2.5)^2 + (ry - 1.0)^2),
+        1.0 - sqrt((rx + 5.0)^2 + (ry + 1.0)^2),
+        0.5^2 - sqrt((rx + 8.0)^2 + (ry - 0.2)^2),
+        1.5^2 - sqrt((rx + 2.5)^2 + (ry - 1.0)^2),
     ]
 end
 cx(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(x -> c(x, u), x)
@@ -155,9 +155,10 @@ mutable struct array_w{T<:Real, S<:Integer}
     ns::S
     nx::S
     nu::S
-    new::Vector{tuple_w{T, S}}
-    old::Vector{tuple_w{T, S}}
-    p::Base.RefValue{Vector{tuple_w{T, S}}}
+    a::Vector{tuple_w{T, S}}
+    b::Vector{tuple_w{T, S}}
+    new::Base.RefValue{Vector{tuple_w{T, S}}}
+    old::Base.RefValue{Vector{tuple_w{T, S}}}
     flag::Bool
     swap::Function
 
@@ -171,14 +172,19 @@ mutable struct array_w{T<:Real, S<:Integer}
         self.nu = _nu
         self.ns = _ns
 
-        self.new = [tuple_w{T, S}(_nx, _nu, _ns, T) for _ in 1:_nw]
-        self.old = copy(self.new)
+        self.a = [tuple_w(_nx, _nu, _ns, T) for _ in 1:_nw]
+        self.b = [tuple_w(_nx, _nu, _ns, T) for _ in 1:_nw]
+        
+        self.new = Ref{Vector{tuple_w{T, S}}}(self.a)
+        self.old = Ref{Vector{tuple_w{T, S}}}(self.b)
         
         self.swap = function()
             if self.flag
-                self.p[] = self.b
+                self.new = Ref{Vector{tuple_w{T, S}}}(self.b)
+                self.old = Ref{Vector{tuple_w{T, S}}}(self.a)
             else
-                self.p[] = self.a
+                self.new = Ref{Vector{tuple_w{T, S}}}(self.a)
+                self.old = Ref{Vector{tuple_w{T, S}}}(self.b)
             end
             self.flag = !self.flag
         end
@@ -187,15 +193,33 @@ mutable struct array_w{T<:Real, S<:Integer}
     end
 end
 
-function Base.getindex(S::array_w, i::Int)
-    1 <= i <= S.nw || throw(BoundsError(S, i))
-    return S.p[][i]
+function Base.getindex(U::Base.RefValue{Vector{tuple_w{T, S}}}, i::Int) where {T<:Real, S<:Integer}
+    1 <= i <= length(U[]) || throw(BoundsError(U, i))
+    return U[][i]
 end
 
-function Base.setindex!(S::array_w, j::T, i::Int) where T<:Real
-    1 <= i <= S.nw || throw(BoundsError(S, i))
-    return S.p[][i] = j
+function Base.setindex!(U::Base.RefValue{Vector{tuple_w{T, S}}}, j::T, i::Int) where {T<:Real, S<:Integer}
+    1 <= i <= length(U[]) || throw(BoundsError(U, i))
+    return U[][i] = j
 end
+
+Base.firstindex(U::Base.RefValue{Vector{tuple_w{T, S}}}) where {T<:Real, S<:Integer} = 1
+
+Base.lastindex(U::Base.RefValue{Vector{tuple_w{T, S}}}) where {T<:Real, S<:Integer} = length(U[])
+
+function Base.getindex(U::array_w{T, S}, i::Int) where {T<:Real, S<:Integer}
+    1 <= i <= U.nw || throw(BoundsError(U, i))
+    return U.new[][i]
+end
+
+function Base.setindex!(U::array_w{T, S}, j::T, i::Int) where {T<:Real, S<:Integer}
+    1 <= i <= U.nw || throw(BoundsError(U, i))
+    return U.new[][i] = j
+end
+
+Base.firstindex(U::array_w{T, S}) where {T<:Real, S<:Integer} = 1
+
+Base.lastindex(U::array_w{T, S}) where {T<:Real, S<:Integer} = U.nw
 
 mutable struct tuple_r{T<:Real, S<:Integer}
     ns::S
@@ -291,9 +315,9 @@ function compute_Q!(_Q::struct_Q{T, S}, _V::struct_V{T, S}, w::tuple_w{T, S}) wh
 
 end
 
-φ(x, w::tuple_w, coeff::struct_coefficients) = w.u + coeff.α + coeff.β*(x - w.x)
-ψ(x, w::tuple_w, coeff::struct_coefficients) = w.s + coeff.η + coeff.θ*(x - w.x)
-ξ(x, w::tuple_w, coeff::struct_coefficients) = w.y + coeff.χ + coeff.ζ*(x - w.x)
+φ(x, w::tuple_w, coeff::struct_coefficients, param::T) where T = w.u + param*coeff.α + coeff.β*(x - w.x)
+ψ(x, w::tuple_w, coeff::struct_coefficients, param::T) where T = w.s + param*coeff.η + coeff.θ*(x - w.x)
+ξ(x, w::tuple_w, coeff::struct_coefficients, param::T) where T = w.y + param*coeff.χ + coeff.ζ*(x - w.x)
 
 function compute_coeff!(coeff::struct_coefficients, w::tuple_w, r::tuple_r, Q::struct_Q, μ::Vector{T}) where T<:Real
     _S::Matrix{T} = diagm(w.s)
@@ -366,30 +390,52 @@ function update_Q!(Q::struct_Q{T, S}, w::tuple_w{T, S}, r::tuple_r{T, S}) where 
     # Q.Qss[:, :] .= zeros(Q.ns, Q.ns)
 end
 
-function FFP!(nw::S, list_w::Array{tuple_w{T, S}, 1}, list_coeff::Array{struct_coefficients{T, S}, 1}) where {S<:Integer, T<:Real}
-    x::Vector{T} = copy(list_w[1].x)
-    u::Vector{T} = zeros(list_w[1].nu)
-    s::Vector{T} = zeros(list_w[1].ns)
-    y::Vector{T} = zeros(list_w[1].ns)
-    for i in 1:nw
-        u[:] .= φ(x, list_w[i], list_coeff[i])
-        s[:] .= ψ(x, list_w[i], list_coeff[i])
-        y[:] .= ξ(x, list_w[i], list_coeff[i])
+function FFP!(nw::S, list_w::array_w{T, S}, list_coeff::Array{struct_coefficients{T, S}, 1}) where {S<:Integer, T<:Real}
+    # x::Vector{T} = copy(list_w[1].x)
+    # u::Vector{T} = zeros(list_w[1].nu)
+    # s::Vector{T} = zeros(list_w[1].ns)
+    # y::Vector{T} = zeros(list_w[1].ns)
 
-        list_w[i].u[:] .= u
-        list_w[i].s[:] .= s
-        list_w[i].y[:] .= y
-        list_w[i].x[:] .= x
+    isfailed::Bool = false
 
-        # check_constraints(list_w[i])
+    for i in 1:nw-1
+        if any(list_w.new[i].s .< 0) || any(list_w.new[i].y .< 0)
+            println("failed")
+        end
+    end
+    
+    for param_step in [1.0^i for i in 0:-1:-10]
+        for i in 1:nw-1
+            list_w.new[i].s[:] .= ψ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step)
+            list_w.new[i].y[:] .= ξ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step)
+    
+            if any(list_w.new[i].s .< 0.01*list_w.old[i].s) || any(list_w.new[i].y .< 0.01*list_w.old[i].y)
+                isfailed = true
+                # println("failed")
+                break
+            end
+    
+            list_w.new[i].u[:] .= φ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step)
+    
+            # list_w[i].u[:] .= u
+            # list_w[i].s[:] .= s
+            # list_w[i].y[:] .= y
+            # list_w[i].x[:] .= x
+    
+            # check_constraints(list_w[i])
+    
+            list_w.new[i + 1].x[:] .= f(list_w.new[i].x, list_w.new[i].u)
+        end
 
-        x[:] .= f(x, u)
+        if !isfailed
+            break
+        end
     end
     
 end
 
-function BFP!(nw::S, list_w::Array{tuple_w{T, S}, 1}, list_r::Array{tuple_r{T, S}, 1}, list_coeff::Array{struct_coefficients{T, S}, 1}, μ::Vector{T}) where {S<:Integer, T<:Real}
-    
+function BFP!(nw::S, list_w::array_w{T, S}, list_r::Array{tuple_r{T, S}, 1}, list_coeff::Array{struct_coefficients{T, S}, 1}, μ::Vector{T}) where {S<:Integer, T<:Real}
+
     Q::struct_Q = struct_Q(list_w[1].nx, list_w[1].nu, list_w[1].ns, T)
     V::struct_V = struct_V(list_w[1].nx, T)
     init_V!(V, list_w[nw])
@@ -408,18 +454,19 @@ function check_constraints(w::tuple_w{T, S}) where {S<:Integer, T<:Real}
     w.x[:] .= max.(1E-3::T, w.x)
 end
 
-function loop!(n::S, nw::S, list_w::Array{tuple_w{T, S}, 1}, list_r::Array{tuple_r{T, S}, 1}, list_coeff::Array{struct_coefficients{T, S}, 1}, μ::Vector{T}) where {S<:Integer, T<:Real}
+function loop!(n::S, nw::S, list_w::array_w{T, S}, list_r::Array{tuple_r{T, S}, 1}, list_coeff::Array{struct_coefficients{T, S}, 1}, μ::Vector{T}) where {S<:Integer, T<:Real}
     
     wrap_plot_graph(0, list_w, nw)
     for k in 1:n
         BFP!(nw, list_w, list_r, list_coeff, μ)
+        list_w.swap()
         FFP!(nw, list_w, list_coeff)
         update_μ!(μ, 5.0)
         wrap_plot_graph(k, list_w, nw)
     end
 end
 
-function wrap_plot_graph(idx, list_w::Array{tuple_w{T, S}, 1}, nw::S) where {S<:Integer, T<:Real}
+function wrap_plot_graph(idx, list_w::array_w{T, S}, nw::S) where {S<:Integer, T<:Real}
     plot_graph(
         idx, 
         [list_w[i].x[j] for j in 1:list_w[1].nx, i in 1:nw],
@@ -430,7 +477,7 @@ function wrap_plot_graph(idx, list_w::Array{tuple_w{T, S}, 1}, nw::S) where {S<:
     )
 end
 
-function init_μ!(μ::Vector{T}, list_w::Array{tuple_w{T, S}, 1}, nw::S, ns::S) where {S<:Integer, T<:Real}
+function init_μ!(μ::Vector{T}, list_w::array_w{T, S}, nw::S, ns::S) where {S<:Integer, T<:Real}
     μ[:] .= (sum(l(list_w[i].x, list_w[i].u) for i in 1:nw)/nw/ns + lf(list_w[end].x))*zeros(ns)
 end
 
@@ -438,7 +485,7 @@ function update_μ!(μ::Vector{T}, κ::T) where T<:Real
     μ[:] .= min.(μ/κ, μ.^1.2)
 end
 
-function init_xu!(list_w::Array{tuple_w{T, S}, 1}, nw::S, bx::Tuple{Array{T, 1}, Array{T, 1}}, bu::Tuple{Array{T, 1}, Array{T, 1}}) where {S<:Integer, T<:Real}
+function init_xu!(list_w::array_w{T, S}, nw::S, bx::Tuple{Array{T, 1}, Array{T, 1}}, bu::Tuple{Array{T, 1}, Array{T, 1}}) where {S<:Integer, T<:Real}
     bx0, bxf = bx
     bx0f = bxf .- bx0
     bu0, buf = bu
@@ -449,15 +496,22 @@ function init_xu!(list_w::Array{tuple_w{T, S}, 1}, nw::S, bx::Tuple{Array{T, 1},
     end
 end
 
+function get_list_init(_nx::S, _nu::S, _ns::S, _nw::S, T::DataType) where {S <: Integer}
+    T <: Real || throw(ArgumentError("T must be a subtype of Real"))
+    list_w::array_w{T, S} = array_w(_nx, _nu, _ns, _nw, T)
+    list_r::Array{tuple_r{T, S}, 1} = [tuple_r(_ns, T) for _ in 1:_nw]
+    list_coeff::Array{struct_coefficients{T, S}, 1} = [struct_coefficients(_nx, _nu, _ns, T) for _ in 1:_nw]
+    μ::Vector{T} = zeros(_ns)
+    return list_w, list_r, list_coeff, μ
+end
+
 function main()
     nw::Int64 = 600
     nx::Int64 = 3
     nu::Int64 = 1
     ns::Int64 = 7
-    list_w::Array{tuple_w{Float64, Int64}, 1} = [tuple_w(nx, nu, ns, Float64) for _ in 1:nw]
-    list_r::Array{tuple_r{Float64, Int64}, 1} = [tuple_r(ns, Float64) for _ in 1:nw]
-    list_coeff::Array{struct_coefficients{Float64, Int64}, 1} = [struct_coefficients(nx, nu, ns, Float64) for _ in 1:nw]
-    μ::Vector{Float64} = zeros(ns)
+
+    list_w, list_r, list_coeff, μ = get_list_init(nx, nu, ns, nw, Float64)
 
     init_xu!(list_w, nw, ([-10.0, 0.0, 0.0], [-10.0, 0.0, 0.0]), ([0.0], [0.0]))
     init_μ!(μ, list_w, nw, ns)
