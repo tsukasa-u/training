@@ -150,6 +150,53 @@ mutable struct tuple_w{T<:Real, S<:Integer}
     end
 end
 
+mutable struct array_w{T<:Real, S<:Integer}
+    nw::S
+    ns::S
+    nx::S
+    nu::S
+    new::Vector{tuple_w{T, S}}
+    old::Vector{tuple_w{T, S}}
+    p::Base.RefValue{Vector{tuple_w{T, S}}}
+    flag::Bool
+    swap::Function
+
+    function array_w(_nx::S, _nu::S, _ns::S, _nw::S, T::DataType) where S
+        self = new{T, S}()
+        
+        self.flag = true
+
+        self.nw = _nw
+        self.nx = _nx
+        self.nu = _nu
+        self.ns = _ns
+
+        self.new = [tuple_w{T, S}(_nx, _nu, _ns, T) for _ in 1:_nw]
+        self.old = copy(self.new)
+        
+        self.swap = function()
+            if self.flag
+                self.p[] = self.b
+            else
+                self.p[] = self.a
+            end
+            self.flag = !self.flag
+        end
+
+        return self
+    end
+end
+
+function Base.getindex(S::array_w, i::Int)
+    1 <= i <= S.nw || throw(BoundsError(S, i))
+    return S.p[][i]
+end
+
+function Base.setindex!(S::array_w, j::T, i::Int) where T<:Real
+    1 <= i <= S.nw || throw(BoundsError(S, i))
+    return S.p[][i] = j
+end
+
 mutable struct tuple_r{T<:Real, S<:Integer}
     ns::S
 
