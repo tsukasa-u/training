@@ -143,8 +143,8 @@ mutable struct tuple_w{T<:Real, S<:Integer}
 
         self.x = ones(_nx)
         self.u = zeros(_nu)
-        self.s = ones(_ns)
-        self.y = ones(_ns)
+        self.s = 0.1*ones(_ns)
+        self.y = 0.01*ones(_ns)
 
         return self
     end
@@ -174,6 +174,7 @@ mutable struct array_w{T<:Real, S<:Integer}
 
         self.a = [tuple_w(_nx, _nu, _ns, T) for _ in 1:_nw]
         self.b = [tuple_w(_nx, _nu, _ns, T) for _ in 1:_nw]
+        # self.b = copy(self.a)
         
         self.new = Ref{Vector{tuple_w{T, S}}}(self.a)
         self.old = Ref{Vector{tuple_w{T, S}}}(self.b)
@@ -344,6 +345,7 @@ function compute_coeff!(coeff::struct_coefficients, w::tuple_w, r::tuple_r, Q::s
     # coeff.θ .= ret[(w.nx + 1):(w.nx + w.nu), 2:end]
     # coeff.ζ .= ret[(w.nx + w.nu + 1):end, 2:end]
 
+    # println(Y)
     Y_1::Matrix{T} = inv(Y)
     SY_1::Matrix{T} = _S*Y_1
 
@@ -354,10 +356,10 @@ function compute_coeff!(coeff::struct_coefficients, w::tuple_w, r::tuple_r, Q::s
 
     coeff.β[:, :] .= ret[:, 2:end]
 
-    coeff.η[:] .= Y_1*(r.rhat + _S*Q.Qsu*coeff.α)
+    coeff.η[:] .= vec(Y_1*(r.rhat + _S*Q.Qsu*coeff.α))
     coeff.θ[:, :] .= SY_1*(Q.Qsx + Q.Qsu*coeff.β)
 
-    coeff.χ[:] .= -r.rp - Q.Qsu*coeff.α
+    coeff.χ[:] .= vec(-r.rp - Q.Qsu*coeff.α)
     coeff.ζ[:, :] .= -Q.Qsx - Q.Qsu*coeff.β
 
 end
@@ -398,20 +400,30 @@ function FFP!(nw::S, list_w::array_w{T, S}, list_coeff::Array{struct_coefficient
 
     isfailed::Bool = false
 
-    for i in 1:nw-1
-        if any(list_w.new[i].s .< 0) || any(list_w.new[i].y .< 0)
-            println("failed")
-        end
-    end
+    println("start")
+    # println(list_w.old)
+
+    # for i in 1:nw-1
+    #     if any(list_w.new[i].s .< 0) || any(list_w.new[i].y .< 0)
+    #         println("failed")
+    #     end
+    # end
     
-    for param_step in [1.0^i for i in 0:-1:-10]
+    for param_step in [2.0^i for i in 0:-1:-20]
+        isfailed = false
         for i in 1:nw-1
             list_w.new[i].s[:] .= ψ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step)
             list_w.new[i].y[:] .= ξ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step)
     
-            if any(list_w.new[i].s .< 0.01*list_w.old[i].s) || any(list_w.new[i].y .< 0.01*list_w.old[i].y)
+            if any(list_w.new[i].s .< 0.01*list_w.old[i].s) || any(list_w.new[i].y .< 0.01*list_w.old[i].y) || any(list_w.new[i].s .< 0) || any(list_w.new[i].y .< 0)
                 isfailed = true
-                # println("failed")
+                println("α : ", list_coeff[i].α)
+                println("β : ", list_coeff[i].β)
+                println("η : ", list_coeff[i].η)
+                println("θ : ", list_coeff[i].θ)
+                println("χ : ", list_coeff[i].χ)
+                println("ζ : ", list_coeff[i].ζ)  
+                # println("failed:" , i, " : ",  param_step, " : ", list_w.new[i].s, " : ", list_w.new[i].y, " : ", list_w.old[i].s, " : ", list_w.old[i].y)
                 break
             end
     
@@ -431,7 +443,7 @@ function FFP!(nw::S, list_w::array_w{T, S}, list_coeff::Array{struct_coefficient
             break
         end
     end
-    
+    println("isfailed: ", isfailed)
 end
 
 function BFP!(nw::S, list_w::array_w{T, S}, list_r::Array{tuple_r{T, S}, 1}, list_coeff::Array{struct_coefficients{T, S}, 1}, μ::Vector{T}) where {S<:Integer, T<:Real}
@@ -439,27 +451,29 @@ function BFP!(nw::S, list_w::array_w{T, S}, list_r::Array{tuple_r{T, S}, 1}, lis
     Q::struct_Q = struct_Q(list_w[1].nx, list_w[1].nu, list_w[1].ns, T)
     V::struct_V = struct_V(list_w[1].nx, T)
     init_V!(V, list_w[nw])
-    for i in reverse(1:nw)
+    for i in nw:-1:1
         compute_Q!(Q, V, list_w[i])
-        update_Q!(Q, list_w[i], list_r[i])
         compute_coeff!(list_coeff[i], list_w[i], list_r[i], Q, μ)
+        update_Q!(Q, list_w[i], list_r[i])
         update_V!(Q, V, list_coeff[i])
     end
 end
 
-function check_constraints(w::tuple_w{T, S}) where {S<:Integer, T<:Real}
-    w.s[:] .= max.(1E-3::T, w.s)
-    w.y[:] .= max.(1E-3::T, w.y)
-    w.u[:] .= max.(0.0::T, min.(0.01, w.u))
-    w.x[:] .= max.(1E-3::T, w.x)
+function check_constraints(list_w::array_w{T, S}) where {S<:Integer, T<:Real}
+    for i in 1:list_w.nw
+        list_w.new[i].s[:] .= max.(1E-3::T, list_w.new[i].s)
+        list_w.new[i].y[:] .= max.(1E-3::T, list_w.new[i].y)
+    end
 end
 
 function loop!(n::S, nw::S, list_w::array_w{T, S}, list_r::Array{tuple_r{T, S}, 1}, list_coeff::Array{struct_coefficients{T, S}, 1}, μ::Vector{T}) where {S<:Integer, T<:Real}
     
     wrap_plot_graph(0, list_w, nw)
     for k in 1:n
+        check_constraints(list_w)
         BFP!(nw, list_w, list_r, list_coeff, μ)
         list_w.swap()
+        # check_constraints(list_w)
         FFP!(nw, list_w, list_coeff)
         update_μ!(μ, 5.0)
         wrap_plot_graph(k, list_w, nw)
@@ -485,14 +499,16 @@ function update_μ!(μ::Vector{T}, κ::T) where T<:Real
     μ[:] .= min.(μ/κ, μ.^1.2)
 end
 
-function init_xu!(list_w::array_w{T, S}, nw::S, bx::Tuple{Array{T, 1}, Array{T, 1}}, bu::Tuple{Array{T, 1}, Array{T, 1}}) where {S<:Integer, T<:Real}
+function init_xu!(list_w::array_w{T, S}, bx::Tuple{Array{T, 1}, Array{T, 1}}, bu::Tuple{Array{T, 1}, Array{T, 1}}) where {S<:Integer, T<:Real}
     bx0, bxf = bx
     bx0f = bxf .- bx0
     bu0, buf = bu
     bu0f = buf .- bu0
-    for i in 1:nw
-        list_w[i].x .= bx0f*i/nw .+ bx0
-        list_w[i].u .= bu0f*i/nw .+ bu0
+    for i in 1:list_w.nw
+        list_w.new[i].x .= bx0f*i/list_w.nw .+ bx0
+        list_w.new[i].u .= bu0f*i/list_w.nw .+ bu0
+        list_w.old[i].x .= bx0f*i/list_w.nw .+ bx0
+        list_w.old[i].u .= bu0f*i/list_w.nw .+ bu0
     end
 end
 
@@ -513,10 +529,10 @@ function main()
 
     list_w, list_r, list_coeff, μ = get_list_init(nx, nu, ns, nw, Float64)
 
-    init_xu!(list_w, nw, ([-10.0, 0.0, 0.0], [-10.0, 0.0, 0.0]), ([0.0], [0.0]))
+    init_xu!(list_w, ([-10.0, 0.0, 0.0], [0.0, 0.0, 0.0]), ([0.0], [0.0]))
     init_μ!(μ, list_w, nw, ns)
 
-    loop!(10, nw, list_w, list_r, list_coeff, μ)
+    loop!(3, nw, list_w, list_r, list_coeff, μ)
 end
 
 
@@ -533,7 +549,7 @@ function plot_graph(index, plot_x, plot_u, plot_s, plot_y, plot_t)
     plots_u = Plots.plot(
         plot_t, 
         [ plot_u[1, :] ], 
-        label=["u"],
+        label="u",
         xlabel = "t",
         st=:scatter
     )
