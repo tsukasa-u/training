@@ -292,43 +292,43 @@ function compute_Q!(_Q::struct_Q{T, S}, _V::struct_V{T, S}, w::tuple_w{T, S}) wh
     _fu::Matrix{T} = fu(w.x, w.u)
     _fx_T::Matrix{T} = transpose(_fx)
     _fu_T::Matrix{T} = transpose(_fu)
-    # _fxx::Array{T, 3} = reshape(fxx(w.x, w.u), (_Q.nx, _Q.nx, _Q.nx))
-    # _fux::Array{T, 3} = reshape(fux(w.x, w.u), (_Q.nx, _Q.nu, _Q.nx))
-    # _fuu::Array{T, 3} = reshape(fuu(w.x, w.u), (_Q.nx, _Q.nu, _Q.nu))
-    # _cxx::Array{T, 3} = reshape(cxx(w.x, w.u), (_Q.ns, _Q.nx, _Q.nx))
-    # _cux::Array{T, 3} = reshape(cux(w.x, w.u), (_Q.ns, _Q.nu, _Q.nx))
-    # _cuu::Array{T, 3} = reshape(cuu(w.x, w.u), (_Q.ns, _Q.nu, _Q.nu))
-    
     _fxx::Array{T, 3} = reshape(fxx(w.x, w.u), (_Q.nx, _Q.nx, _Q.nx))
-    _fux::Array{T, 3} = reshape(fux(w.x, w.u), (_Q.nu, _Q.nx, _Q.nx))
-    _fuu::Array{T, 3} = reshape(fuu(w.x, w.u), (_Q.nu, _Q.nx, _Q.nu))
-    _cxx::Array{T, 3} = reshape(cxx(w.x, w.u), (_Q.nx, _Q.ns, _Q.nx))
-    _cux::Array{T, 3} = reshape(cux(w.x, w.u), (_Q.nu, _Q.ns, _Q.nx))
-    _cuu::Array{T, 3} = reshape(cuu(w.x, w.u), (_Q.nu, _Q.ns, _Q.nu))
+    _fux::Array{T, 3} = reshape(fux(w.x, w.u), (_Q.nx, _Q.nu, _Q.nx))
+    _fuu::Array{T, 3} = reshape(fuu(w.x, w.u), (_Q.nx, _Q.nu, _Q.nu))
+    _cxx::Array{T, 3} = reshape(cxx(w.x, w.u), (_Q.ns, _Q.nx, _Q.nx))
+    _cux::Array{T, 3} = reshape(cux(w.x, w.u), (_Q.ns, _Q.nu, _Q.nx))
+    _cuu::Array{T, 3} = reshape(cuu(w.x, w.u), (_Q.ns, _Q.nu, _Q.nu))
+    
+    # _fxx::Array{T, 3} = reshape(fxx(w.x, w.u), (_Q.nx, _Q.nx, _Q.nx))
+    # _fux::Array{T, 3} = reshape(fux(w.x, w.u), (_Q.nu, _Q.nx, _Q.nx))
+    # _fuu::Array{T, 3} = reshape(fuu(w.x, w.u), (_Q.nu, _Q.nx, _Q.nu))
+    # _cxx::Array{T, 3} = reshape(cxx(w.x, w.u), (_Q.nx, _Q.ns, _Q.nx))
+    # _cux::Array{T, 3} = reshape(cux(w.x, w.u), (_Q.nu, _Q.ns, _Q.nx))
+    # _cuu::Array{T, 3} = reshape(cuu(w.x, w.u), (_Q.nu, _Q.ns, _Q.nu))
 
     println(size(_cux), " : ", size(cux(w.x, w.u)), _cux)
 
     _Q.Qx[:] .= lx(w.x, w.u) + _fx_T*_V.Vx
     _Q.Qu[:] .= lu(w.x, w.u) + _fu_T*_V.Vx
 
-    # _Q.Qxx[:, :] .=           lxx(w.x, w.u)  + _fx_T*_V.Vxx*_fx + sum(_V.Vx[i] *           _fxx[i, :, :]  for i in 1:_Q.nx)
-    # # _Q.Qxu[:, :] .= lxu(w.x, w.u) + _fx_T*_V.Vxx*_fu + sum(_V.Vx[i] * _fxu[i, :, :] for i in 1:_Q.nx)
-    # _Q.Qxu[:, :] .= transpose(lux(w.x, w.u)) + _fx_T*_V.Vxx*_fu + sum(_V.Vx[i] * transpose(_fux[i, :, :]) for i in 1:_Q.nx)
-    # _Q.Quu[:, :] .=           luu(w.x, w.u)  + _fu_T*_V.Vxx*_fu + sum(_V.Vx[i] *           _fuu[i, :, :]  for i in 1:_Q.nx)
+    _Q.Qxx[:, :] .=           lxx(w.x, w.u)  + _fx_T*_V.Vxx*_fx + sum(_V.Vx[i] *           _fxx[i, :, :]  for i in 1:_Q.nx)
+    # _Q.Qxu[:, :] .= lxu(w.x, w.u) + _fx_T*_V.Vxx*_fu + sum(_V.Vx[i] * _fxu[i, :, :] for i in 1:_Q.nx)
+    _Q.Qxu[:, :] .= transpose(lux(w.x, w.u)) + _fx_T*_V.Vxx*_fu + sum(_V.Vx[i] * transpose(_fux[i, :, :]) for i in 1:_Q.nx)
+    _Q.Quu[:, :] .=           luu(w.x, w.u)  + _fu_T*_V.Vxx*_fu + sum(_V.Vx[i] *           _fuu[i, :, :]  for i in 1:_Q.nx)
     
-    _Q.Qxx[:, :] .=           lxx(w.x, w.u)  + _fx_T*_V.Vxx*_fx + sum(_V.Vx[i] *           _fxx[:, i, :]  for i in 1:_Q.nx)
-    _Q.Qxu[:, :] .= transpose(lux(w.x, w.u)) + _fx_T*_V.Vxx*_fu + sum(_V.Vx[i] * transpose(_fux[:, i, :]) for i in 1:_Q.nx)
-    _Q.Quu[:, :] .=           luu(w.x, w.u)  + _fu_T*_V.Vxx*_fu + sum(_V.Vx[i] *           _fuu[:, i, :]  for i in 1:_Q.nx)
+    # _Q.Qxx[:, :] .=           lxx(w.x, w.u)  + _fx_T*_V.Vxx*_fx + sum(_V.Vx[i] *           _fxx[:, i, :]  for i in 1:_Q.nx)
+    # _Q.Qxu[:, :] .= transpose(lux(w.x, w.u)) + _fx_T*_V.Vxx*_fu + sum(_V.Vx[i] * transpose(_fux[:, i, :]) for i in 1:_Q.nx)
+    # _Q.Quu[:, :] .=           luu(w.x, w.u)  + _fu_T*_V.Vxx*_fu + sum(_V.Vx[i] *           _fuu[:, i, :]  for i in 1:_Q.nx)
 
 
     _Q.Qx[:] .+= transpose(_Q.Qsx)*w.s
     _Q.Qu[:] .+= transpose(_Q.Qsu)*w.s
-    # _Q.Qxx[:, :] .+= sum(w.s[i] *           _cxx[i, :, :]  for i in 1:_Q.ns)
-    # _Q.Qxu[:, :] .+= sum(w.s[i] * transpose(_cux[i, :, :]) for i in 1:_Q.ns)
-    # _Q.Quu[:, :] .+= sum(w.s[i] *           _cuu[i, :, :]  for i in 1:_Q.ns)
-    _Q.Qxx[:, :] .+= sum(w.s[i] *           _cxx[:, i, :]  for i in 1:_Q.ns)
-    _Q.Qxu[:, :] .+= sum(w.s[i] * transpose(_cux[:, i, :]) for i in 1:_Q.ns)
-    _Q.Quu[:, :] .+= sum(w.s[i] *           _cuu[:, i, :]  for i in 1:_Q.ns)
+    _Q.Qxx[:, :] .+= sum(w.s[i] *           _cxx[i, :, :]  for i in 1:_Q.ns)
+    _Q.Qxu[:, :] .+= sum(w.s[i] * transpose(_cux[i, :, :]) for i in 1:_Q.ns)
+    _Q.Quu[:, :] .+= sum(w.s[i] *           _cuu[i, :, :]  for i in 1:_Q.ns)
+    # _Q.Qxx[:, :] .+= sum(w.s[i] *           _cxx[:, i, :]  for i in 1:_Q.ns)
+    # _Q.Qxu[:, :] .+= sum(w.s[i] * transpose(_cux[:, i, :]) for i in 1:_Q.ns)
+    # _Q.Quu[:, :] .+= sum(w.s[i] *           _cuu[:, i, :]  for i in 1:_Q.ns)
 
 end
 
