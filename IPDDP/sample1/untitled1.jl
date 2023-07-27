@@ -70,7 +70,7 @@ mutable struct struct_V{T<:Real, S<:Integer}
     
     ΔV::T
 
-    Vx::Vector{T}
+    Vx::Matrix{T}
 
     Vxx::Matrix{T}
 
@@ -79,7 +79,7 @@ mutable struct struct_V{T<:Real, S<:Integer}
 
         self.nx = _nx
 
-        self.Vx = zeros(_nx)
+        self.Vx = zeros(_nx, 1)
         self.Vxx = zeros(_nx, _nx)
 
         return self
@@ -91,9 +91,9 @@ mutable struct struct_Q{T<:Real, S<:Integer}
     nx::S
     nu::S
 
-    Qx::Vector{T}
-    Qu::Vector{T}
-    Qs::Vector{T}
+    Qx::Matrix{T}
+    Qu::Matrix{T}
+    Qs::Matrix{T}
 
     Qsx::Matrix{T}
     Qsu::Matrix{T}
@@ -109,9 +109,9 @@ mutable struct struct_Q{T<:Real, S<:Integer}
         self.nu = _nu
         self.ns = _ns
 
-        self.Qx = zeros(_nx)
-        self.Qu = zeros(_nu)
-        self.Qs = zeros(_ns)
+        self.Qx = zeros(_nx, 1)
+        self.Qu = zeros(_nu, 1)
+        self.Qs = zeros(_ns, 1)
 
         self.Qsx = zeros(_ns, _nx)
         self.Qsu = zeros(_ns, _nu)
@@ -247,9 +247,9 @@ mutable struct struct_coefficients{T<:Real, S<:Integer}
     nx::S
     nu::S
 
-    α::Vector{T}
-    η::Vector{T}
-    χ::Vector{T}
+    α::Matrix{T}
+    η::Matrix{T}
+    χ::Matrix{T}
     β::Matrix{T}
     θ::Matrix{T}
     ζ::Matrix{T}
@@ -261,9 +261,9 @@ mutable struct struct_coefficients{T<:Real, S<:Integer}
         self.nu = _nu
         self.ns = _ns
 
-        self.α = zeros(_nu)
-        self.η = zeros(_ns)
-        self.χ = zeros(_ns)
+        self.α = zeros(_nu, 1)
+        self.η = zeros(_ns, 1)
+        self.χ = zeros(_ns, 1)
 
         self.β = zeros(_nu, _nx)
         self.θ = zeros(_ns, _nx)
@@ -292,33 +292,51 @@ function compute_Q!(_Q::struct_Q{T, S}, _V::struct_V{T, S}, w::tuple_w{T, S}) wh
     _fu::Matrix{T} = fu(w.x, w.u)
     _fx_T::Matrix{T} = transpose(_fx)
     _fu_T::Matrix{T} = transpose(_fu)
+    # _fxx::Array{T, 3} = reshape(fxx(w.x, w.u), (_Q.nx, _Q.nx, _Q.nx))
+    # _fux::Array{T, 3} = reshape(fux(w.x, w.u), (_Q.nx, _Q.nu, _Q.nx))
+    # _fuu::Array{T, 3} = reshape(fuu(w.x, w.u), (_Q.nx, _Q.nu, _Q.nu))
+    # _cxx::Array{T, 3} = reshape(cxx(w.x, w.u), (_Q.ns, _Q.nx, _Q.nx))
+    # _cux::Array{T, 3} = reshape(cux(w.x, w.u), (_Q.ns, _Q.nu, _Q.nx))
+    # _cuu::Array{T, 3} = reshape(cuu(w.x, w.u), (_Q.ns, _Q.nu, _Q.nu))
+    
     _fxx::Array{T, 3} = reshape(fxx(w.x, w.u), (_Q.nx, _Q.nx, _Q.nx))
-    _fux::Array{T, 3} = reshape(fux(w.x, w.u), (_Q.nx, _Q.nu, _Q.nx))
-    _fuu::Array{T, 3} = reshape(fuu(w.x, w.u), (_Q.nx, _Q.nu, _Q.nu))
-    _cxx::Array{T, 3} = reshape(cxx(w.x, w.u), (_Q.ns, _Q.nx, _Q.nx))
-    _cux::Array{T, 3} = reshape(cux(w.x, w.u), (_Q.ns, _Q.nu, _Q.nx))
-    _cuu::Array{T, 3} = reshape(cuu(w.x, w.u), (_Q.ns, _Q.nu, _Q.nu))
+    _fux::Array{T, 3} = reshape(fux(w.x, w.u), (_Q.nu, _Q.nx, _Q.nx))
+    _fuu::Array{T, 3} = reshape(fuu(w.x, w.u), (_Q.nu, _Q.nx, _Q.nu))
+    _cxx::Array{T, 3} = reshape(cxx(w.x, w.u), (_Q.nx, _Q.ns, _Q.nx))
+    _cux::Array{T, 3} = reshape(cux(w.x, w.u), (_Q.nu, _Q.ns, _Q.nx))
+    _cuu::Array{T, 3} = reshape(cuu(w.x, w.u), (_Q.nu, _Q.ns, _Q.nu))
+
+    println(size(_cux), " : ", size(cux(w.x, w.u)), _cux)
 
     _Q.Qx[:] .= lx(w.x, w.u) + _fx_T*_V.Vx
     _Q.Qu[:] .= lu(w.x, w.u) + _fu_T*_V.Vx
 
-    _Q.Qxx[:, :] .=           lxx(w.x, w.u)  + _fx_T*_V.Vxx*_fx + sum(_V.Vx[i] *           _fxx[i, :, :]  for i in 1:_Q.nx)
-    # _Q.Qxu[:, :] .= lxu(w.x, w.u) + _fx_T*_V.Vxx*_fu + sum(_V.Vx[i] * _fxu[i, :, :] for i in 1:_Q.nx)
-    _Q.Qxu[:, :] .= transpose(lux(w.x, w.u)) + _fx_T*_V.Vxx*_fu + sum(_V.Vx[i] * transpose(_fux[i, :, :]) for i in 1:_Q.nx)
-    _Q.Quu[:, :] .=           luu(w.x, w.u)  + _fu_T*_V.Vxx*_fu + sum(_V.Vx[i] *           _fuu[i, :, :]  for i in 1:_Q.nx)
+    # _Q.Qxx[:, :] .=           lxx(w.x, w.u)  + _fx_T*_V.Vxx*_fx + sum(_V.Vx[i] *           _fxx[i, :, :]  for i in 1:_Q.nx)
+    # # _Q.Qxu[:, :] .= lxu(w.x, w.u) + _fx_T*_V.Vxx*_fu + sum(_V.Vx[i] * _fxu[i, :, :] for i in 1:_Q.nx)
+    # _Q.Qxu[:, :] .= transpose(lux(w.x, w.u)) + _fx_T*_V.Vxx*_fu + sum(_V.Vx[i] * transpose(_fux[i, :, :]) for i in 1:_Q.nx)
+    # _Q.Quu[:, :] .=           luu(w.x, w.u)  + _fu_T*_V.Vxx*_fu + sum(_V.Vx[i] *           _fuu[i, :, :]  for i in 1:_Q.nx)
+    
+    _Q.Qxx[:, :] .=           lxx(w.x, w.u)  + _fx_T*_V.Vxx*_fx + sum(_V.Vx[i] *           _fxx[:, i, :]  for i in 1:_Q.nx)
+    _Q.Qxu[:, :] .= transpose(lux(w.x, w.u)) + _fx_T*_V.Vxx*_fu + sum(_V.Vx[i] * transpose(_fux[:, i, :]) for i in 1:_Q.nx)
+    _Q.Quu[:, :] .=           luu(w.x, w.u)  + _fu_T*_V.Vxx*_fu + sum(_V.Vx[i] *           _fuu[:, i, :]  for i in 1:_Q.nx)
 
 
     _Q.Qx[:] .+= transpose(_Q.Qsx)*w.s
     _Q.Qu[:] .+= transpose(_Q.Qsu)*w.s
-    _Q.Qxx[:, :] .+= sum(w.s[i] *           _cxx[i, :, :]  for i in 1:_Q.ns)
-    _Q.Qxu[:, :] .+= sum(w.s[i] * transpose(_cux[i, :, :]) for i in 1:_Q.ns)
-    _Q.Quu[:, :] .+= sum(w.s[i] *           _cuu[i, :, :]  for i in 1:_Q.ns)
+    # _Q.Qxx[:, :] .+= sum(w.s[i] *           _cxx[i, :, :]  for i in 1:_Q.ns)
+    # _Q.Qxu[:, :] .+= sum(w.s[i] * transpose(_cux[i, :, :]) for i in 1:_Q.ns)
+    # _Q.Quu[:, :] .+= sum(w.s[i] *           _cuu[i, :, :]  for i in 1:_Q.ns)
+    _Q.Qxx[:, :] .+= sum(w.s[i] *           _cxx[:, i, :]  for i in 1:_Q.ns)
+    _Q.Qxu[:, :] .+= sum(w.s[i] * transpose(_cux[:, i, :]) for i in 1:_Q.ns)
+    _Q.Quu[:, :] .+= sum(w.s[i] *           _cuu[:, i, :]  for i in 1:_Q.ns)
 
 end
 
 φ(x, w::tuple_w, coeff::struct_coefficients, param::T) where T = w.u + param*coeff.α + coeff.β*(x - w.x)
 ψ(x, w::tuple_w, coeff::struct_coefficients, param::T) where T = w.s + param*coeff.η + coeff.θ*(x - w.x)
 ξ(x, w::tuple_w, coeff::struct_coefficients, param::T) where T = w.y + param*coeff.χ + coeff.ζ*(x - w.x)
+
+LU(x, a::T) where T = 0.5*(x + ln(exp(a*x) + exp(-a*x))/a)
 
 function compute_coeff!(coeff::struct_coefficients, w::tuple_w, r::tuple_r, Q::struct_Q, μ::Vector{T}) where T<:Real
     _S::Matrix{T} = diagm(w.s)
@@ -352,14 +370,14 @@ function compute_coeff!(coeff::struct_coefficients, w::tuple_w, r::tuple_r, Q::s
     R::Matrix{T} = (Q.Quu + transpose(Q.Qsu)*SY_1*Q.Qsu)
     ret::Matrix{T} = -inv(R)*[Q.Qu + transpose(Q.Qsu)*Y_1*r.rhat transpose(Q.Qxu) + transpose(Q.Qsu)*SY_1*Q.Qsx]
     
-    coeff.α[:] .= vec(ret[:, 1])
+    coeff.α[:] .= ret[:, 1]
 
     coeff.β[:, :] .= ret[:, 2:end]
 
-    coeff.η[:] .= vec(Y_1*(r.rhat + _S*Q.Qsu*coeff.α))
+    coeff.η[:] .= Y_1*(r.rhat + _S*Q.Qsu*coeff.α)
     coeff.θ[:, :] .= SY_1*(Q.Qsx + Q.Qsu*coeff.β)
 
-    coeff.χ[:] .= vec(-r.rp - Q.Qsu*coeff.α)
+    coeff.χ[:] .= -r.rp - Q.Qsu*coeff.α
     coeff.ζ[:, :] .= -Q.Qsx - Q.Qsu*coeff.β
 
 end
