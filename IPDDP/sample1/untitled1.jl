@@ -346,7 +346,7 @@ end
 ψ(x, w::tuple_w, coeff::struct_coefficients, param::T) where T = w.s + param*coeff.η + coeff.θ*(x - w.x)
 ξ(x, w::tuple_w, coeff::struct_coefficients, param::T) where T = w.y + param*coeff.χ + coeff.ζ*(x - w.x)
 
-LU(x, a::T) where T = 0.5*(x + ln(exp(a*x) + exp(-a*x))/a)
+ReLU(x, a::T) where T = 0.5*(x + log(exp(a*x) + exp(-a*x))/a)
 
 function compute_coeff!(coeff::struct_coefficients, w::tuple_w, r::tuple_r, Q::struct_Q, μ::Vector{T}) where T<:Real
     _S::Matrix{T} = diagm(w.s)
@@ -437,24 +437,25 @@ function FFP!(nw::S, list_w::array_w{T, S}, list_coeff::Array{struct_coefficient
     #     end
     # end
     
-    for param_step in [2.0^i for i in 0:-1:-20]
+    # for param_step in [2.0^i for i in 0:-1:-20]
+    for param_step in [2.0^i for i in 0:-1:0]
         isfailed = false
         for i in 1:nw-1
-            list_w.new[i].s[:] = ψ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step)
-            list_w.new[i].y[:] = ξ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step)
+            list_w.new[i].s[:] = ReLU.(ψ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step), 10.0)
+            list_w.new[i].y[:] = ReLU.(ξ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step), 10.0)
     
-            if any(list_w.new[i].s .< 0.01*list_w.old[i].s) || any(list_w.new[i].y .< 0.01*list_w.old[i].y) || any(list_w.new[i].s .< 0) || any(list_w.new[i].y .< 0)
-                isfailed = true
-                println("step : ", i, " ", param_step, " ", list_w.new[i].x - list_w.old[i].x)
-                println("α : ", list_coeff[i].α)
-                println("β : ", list_coeff[i].β)
-                println("η : ", list_coeff[i].η)
-                println("θ : ", list_coeff[i].θ)
-                println("χ : ", list_coeff[i].χ)
-                println("ζ : ", list_coeff[i].ζ)  
-                # println("failed:" , i, " : ",  param_step, " : ", list_w.new[i].s, " : ", list_w.new[i].y, " : ", list_w.old[i].s, " : ", list_w.old[i].y)
-                break
-            end
+            # if any(list_w.new[i].s .< 0.01*list_w.old[i].s) || any(list_w.new[i].y .< 0.01*list_w.old[i].y) || any(list_w.new[i].s .< 0) || any(list_w.new[i].y .< 0)
+            #     isfailed = true
+            #     println("step : ", i, " ", param_step, " ", list_w.new[i].x - list_w.old[i].x)
+            #     println("α : ", list_coeff[i].α)
+            #     println("β : ", list_coeff[i].β)
+            #     println("η : ", list_coeff[i].η)
+            #     println("θ : ", list_coeff[i].θ)
+            #     println("χ : ", list_coeff[i].χ)
+            #     println("ζ : ", list_coeff[i].ζ)  
+            #     # println("failed:" , i, " : ",  param_step, " : ", list_w.new[i].s, " : ", list_w.new[i].y, " : ", list_w.old[i].s, " : ", list_w.old[i].y)
+            #     break
+            # end
     
             list_w.new[i].u[:] = φ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step)
     
@@ -505,7 +506,11 @@ function loop!(n::S, nw::S, list_w::array_w{T, S}, list_r::Array{tuple_r{T, S}, 
         # check_constraints(list_w)
         FFP!(nw, list_w, list_coeff)
         update_μ!(μ, 5.0)
+        
         wrap_plot_graph(k, list_w, nw)
+        list_w.swap()
+        wrap_plot_graph(100*k, list_w, nw)
+        list_w.swap()
     end
 end
 
