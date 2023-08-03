@@ -427,6 +427,7 @@ function FFP!(nw::S, list_w::array_w{T, S}, list_coeff::Array{struct_coefficient
     # y::Vector{T} = zeros(list_w[1].ns)
 
     isfailed::Bool = false
+    failed_step::S = -1
 
     println("start")
     # println(list_w.old)
@@ -436,16 +437,23 @@ function FFP!(nw::S, list_w::array_w{T, S}, list_coeff::Array{struct_coefficient
     #         println("failed")
     #     end
     # end
+
+    param_steps::Vector{T} = [2.0^i for i in 0:-1:-20]
     
-    # for param_step in [2.0^i for i in 0:-1:-20]
-    for param_step in [2.0^i for i in 0:-1:0]
+    for param_step in param_steps
+    # for param_step in [2.0^i for i in -3:-1:-3]
         isfailed = false
         for i in 1:nw-1
-            list_w.new[i].s[:] = ReLU.(ψ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step), 10.0)
-            list_w.new[i].y[:] = ReLU.(ξ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step), 10.0)
+            # list_w.new[i].s[:] = ReLU.(ψ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step), 1E+0)
+            # list_w.new[i].y[:] = ReLU.(ξ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step), 1E+0)
+            list_w.new[i].s[:] = ψ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step)
+            list_w.new[i].y[:] = ξ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step)
     
+            if any(list_w.new[i].s .<= 1E-3) || any(list_w.new[i].y .<= 1E-3)
             # if any(list_w.new[i].s .< 0.01*list_w.old[i].s) || any(list_w.new[i].y .< 0.01*list_w.old[i].y) || any(list_w.new[i].s .< 0) || any(list_w.new[i].y .< 0)
-            #     isfailed = true
+            # if any(list_w.new[i].s .< 0.01*list_w.old[i].s) || any(list_w.new[i].y .< 0.01*list_w.old[i].y) || any(list_w.new[i].s .<= 1E-3) || any(list_w.new[i].y .<= 1E-3)
+                isfailed = true
+                failed_step = i
             #     println("step : ", i, " ", param_step, " ", list_w.new[i].x - list_w.old[i].x)
             #     println("α : ", list_coeff[i].α)
             #     println("β : ", list_coeff[i].β)
@@ -454,8 +462,8 @@ function FFP!(nw::S, list_w::array_w{T, S}, list_coeff::Array{struct_coefficient
             #     println("χ : ", list_coeff[i].χ)
             #     println("ζ : ", list_coeff[i].ζ)  
             #     # println("failed:" , i, " : ",  param_step, " : ", list_w.new[i].s, " : ", list_w.new[i].y, " : ", list_w.old[i].s, " : ", list_w.old[i].y)
-            #     break
-            # end
+                break
+            end
     
             list_w.new[i].u[:] = φ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step)
     
@@ -471,6 +479,16 @@ function FFP!(nw::S, list_w::array_w{T, S}, list_coeff::Array{struct_coefficient
 
         if !isfailed
             break
+        end
+    end
+    if isfailed
+        for i in failed_step:nw-1
+            list_w.new[i].s[:] = ReLU.(ψ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_steps[end]), 1E+1)
+            list_w.new[i].y[:] = ReLU.(ξ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_steps[end]), 1E+1)
+    
+            list_w.new[i].u[:] = φ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_steps[end])
+    
+            list_w.new[i + 1].x[:] = f(list_w.new[i].x, list_w.new[i].u)
         end
     end
     println("isfailed: ", isfailed)
@@ -508,21 +526,30 @@ function loop!(n::S, nw::S, list_w::array_w{T, S}, list_r::Array{tuple_r{T, S}, 
         update_μ!(μ, 5.0)
         
         wrap_plot_graph(k, list_w, nw)
-        list_w.swap()
-        wrap_plot_graph(100*k, list_w, nw)
-        list_w.swap()
+        wrap_plot_graph(-k, list_w, nw, check_nan=true)
     end
 end
 
-function wrap_plot_graph(idx, list_w::array_w{T, S}, nw::S) where {S<:Integer, T<:Real}
-    plot_graph(
-        idx, 
-        [list_w[i].x[j] for j in 1:list_w[1].nx, i in 1:nw],
-        [list_w[i].u[j] for j in 1:list_w[1].nu, i in 1:nw], 
-        [list_w[i].s[j] for j in 1:list_w[1].ns, i in 1:nw], 
-        [list_w[i].y[j] for j in 1:list_w[1].ns, i in 1:nw], 
-        [0.01 * i for i in 1:nw]
-    )
+function wrap_plot_graph(idx, list_w::array_w{T, S}, nw::S; check_nan=false) where {S<:Integer, T<:Real}
+    if check_nan
+        plot_graph(
+            idx, 
+            [isnan(list_w[i].x[j]) ? j : NaN for j in 1:list_w[1].nx, i in 1:nw],
+            [isnan(list_w[i].u[j]) ? j : NaN for j in 1:list_w[1].nu, i in 1:nw], 
+            [isnan(list_w[i].s[j]) ? j : NaN for j in 1:list_w[1].ns, i in 1:nw], 
+            [isnan(list_w[i].y[j]) ? j : NaN for j in 1:list_w[1].ns, i in 1:nw], 
+            [0.01 * i for i in 1:nw]
+        )
+    else
+        plot_graph(
+            idx, 
+            [list_w[i].x[j] for j in 1:list_w[1].nx, i in 1:nw],
+            [list_w[i].u[j] for j in 1:list_w[1].nu, i in 1:nw], 
+            [list_w[i].s[j] for j in 1:list_w[1].ns, i in 1:nw], 
+            [list_w[i].y[j] for j in 1:list_w[1].ns, i in 1:nw], 
+            [0.01 * i for i in 1:nw]
+        )
+    end
 end
 
 function init_μ!(μ::Vector{T}, list_w::array_w{T, S}, nw::S, ns::S) where {S<:Integer, T<:Real}
