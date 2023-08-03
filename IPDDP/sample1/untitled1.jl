@@ -281,6 +281,10 @@ function init_V!(_V::struct_V{T, S}, w::tuple_w{T, S}) where {T<:Real, S<:Intege
 
 end
 
+function reshape_tensor_3(x, n::Tuple{S, S, S}) where S<:Integer
+    return [x[i*2+v-2, j] for v in 1:n[1], i in 1:n[2], j in 1:n[3]]
+end
+
 function compute_Q!(_Q::struct_Q{T, S}, _V::struct_V{T, S}, w::tuple_w{T, S}) where {T<:Real, S<:Integer}
 
     _Q.Qs[:] .= c(w.x, w.u)
@@ -292,12 +296,18 @@ function compute_Q!(_Q::struct_Q{T, S}, _V::struct_V{T, S}, w::tuple_w{T, S}) wh
     _fu::Matrix{T} = fu(w.x, w.u)
     _fx_T::Matrix{T} = transpose(_fx)
     _fu_T::Matrix{T} = transpose(_fu)
-    _fxx::Array{T, 3} = reshape(fxx(w.x, w.u), (_Q.nx, _Q.nx, _Q.nx))
-    _fux::Array{T, 3} = reshape(fux(w.x, w.u), (_Q.nx, _Q.nu, _Q.nx))
-    _fuu::Array{T, 3} = reshape(fuu(w.x, w.u), (_Q.nx, _Q.nu, _Q.nu))
-    _cxx::Array{T, 3} = reshape(cxx(w.x, w.u), (_Q.ns, _Q.nx, _Q.nx))
-    _cux::Array{T, 3} = reshape(cux(w.x, w.u), (_Q.ns, _Q.nu, _Q.nx))
-    _cuu::Array{T, 3} = reshape(cuu(w.x, w.u), (_Q.ns, _Q.nu, _Q.nu))
+    _fxx::Array{T, 3} = reshape_tensor_3(fxx(w.x, w.u), (_Q.nx, _Q.nx, _Q.nx))
+    _fux::Array{T, 3} = reshape_tensor_3(fux(w.x, w.u), (_Q.nx, _Q.nu, _Q.nx))
+    _fuu::Array{T, 3} = reshape_tensor_3(fuu(w.x, w.u), (_Q.nx, _Q.nu, _Q.nu))
+    _cxx::Array{T, 3} = reshape_tensor_3(cxx(w.x, w.u), (_Q.ns, _Q.nx, _Q.nx))
+    _cux::Array{T, 3} = reshape_tensor_3(cux(w.x, w.u), (_Q.ns, _Q.nu, _Q.nx))
+    _cuu::Array{T, 3} = reshape_tensor_3(cuu(w.x, w.u), (_Q.ns, _Q.nu, _Q.nu))
+    # _fxx::Array{T, 3} = reshape(fxx(w.x, w.u), (_Q.nx, _Q.nx, _Q.nx))
+    # _fux::Array{T, 3} = reshape(fux(w.x, w.u), (_Q.nx, _Q.nu, _Q.nx))
+    # _fuu::Array{T, 3} = reshape(fuu(w.x, w.u), (_Q.nx, _Q.nu, _Q.nu))
+    # _cxx::Array{T, 3} = reshape(cxx(w.x, w.u), (_Q.ns, _Q.nx, _Q.nx))
+    # _cux::Array{T, 3} = reshape(cux(w.x, w.u), (_Q.ns, _Q.nu, _Q.nx))
+    # _cuu::Array{T, 3} = reshape(cuu(w.x, w.u), (_Q.ns, _Q.nu, _Q.nu))
     
     # _fxx::Array{T, 3} = reshape(fxx(w.x, w.u), (_Q.nx, _Q.nx, _Q.nx))
     # _fux::Array{T, 3} = reshape(fux(w.x, w.u), (_Q.nu, _Q.nx, _Q.nx))
@@ -306,7 +316,7 @@ function compute_Q!(_Q::struct_Q{T, S}, _V::struct_V{T, S}, w::tuple_w{T, S}) wh
     # _cux::Array{T, 3} = reshape(cux(w.x, w.u), (_Q.nu, _Q.ns, _Q.nx))
     # _cuu::Array{T, 3} = reshape(cuu(w.x, w.u), (_Q.nu, _Q.ns, _Q.nu))
 
-    println(size(_cux), " : ", size(cux(w.x, w.u)), _cux)
+    # println(size(_cux), " : ", size(cux(w.x, w.u)), _cux)
 
     _Q.Qx[:] .= lx(w.x, w.u) + _fx_T*_V.Vx
     _Q.Qu[:] .= lu(w.x, w.u) + _fu_T*_V.Vx
@@ -430,11 +440,12 @@ function FFP!(nw::S, list_w::array_w{T, S}, list_coeff::Array{struct_coefficient
     for param_step in [2.0^i for i in 0:-1:-20]
         isfailed = false
         for i in 1:nw-1
-            list_w.new[i].s[:] .= ψ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step)
-            list_w.new[i].y[:] .= ξ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step)
+            list_w.new[i].s[:] = ψ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step)
+            list_w.new[i].y[:] = ξ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step)
     
             if any(list_w.new[i].s .< 0.01*list_w.old[i].s) || any(list_w.new[i].y .< 0.01*list_w.old[i].y) || any(list_w.new[i].s .< 0) || any(list_w.new[i].y .< 0)
                 isfailed = true
+                println("step : ", i, " ", param_step, " ", list_w.new[i].x - list_w.old[i].x)
                 println("α : ", list_coeff[i].α)
                 println("β : ", list_coeff[i].β)
                 println("η : ", list_coeff[i].η)
@@ -445,7 +456,7 @@ function FFP!(nw::S, list_w::array_w{T, S}, list_coeff::Array{struct_coefficient
                 break
             end
     
-            list_w.new[i].u[:] .= φ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step)
+            list_w.new[i].u[:] = φ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_step)
     
             # list_w[i].u[:] .= u
             # list_w[i].s[:] .= s
@@ -454,7 +465,7 @@ function FFP!(nw::S, list_w::array_w{T, S}, list_coeff::Array{struct_coefficient
     
             # check_constraints(list_w[i])
     
-            list_w.new[i + 1].x[:] .= f(list_w.new[i].x, list_w.new[i].u)
+            list_w.new[i + 1].x[:] = f(list_w.new[i].x, list_w.new[i].u)
         end
 
         if !isfailed
