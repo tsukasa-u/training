@@ -390,6 +390,21 @@ function compute_coeff!(coeff::struct_coefficients, w::tuple_w, r::tuple_r, Q::s
     coeff.χ[:] .= -r.rp - Q.Qsu*coeff.α
     coeff.ζ[:, :] .= -Q.Qsx - Q.Qsu*coeff.β
 
+    # println("coeff.α = ", coeff.α)
+    # println("coeff.β = ", coeff.β)
+    # println("coeff.η = ", coeff.η)
+    # println("coeff.θ = ", coeff.θ)
+    # println("coeff.χ = ", coeff.χ)
+    # println("coeff.ζ = ", coeff.ζ)
+
+    # println("r.rp = ", r.rp)
+    # println("r.rd = ", r.rd)
+    # println("r.rhat = ", r.rhat)
+
+    println("w.s = ", w.s)
+    # println("w.y = ", w.y)
+    # println("μ = ", μ)
+
 end
 
 function update_V!(Q::struct_Q{T, S}, V::struct_V{T, S},  coeff::struct_coefficients{T, S}) where {T<:Real, S<:Integer}
@@ -481,16 +496,16 @@ function FFP!(nw::S, list_w::array_w{T, S}, list_coeff::Array{struct_coefficient
             break
         end
     end
-    if isfailed
-        for i in failed_step:nw-1
-            list_w.new[i].s[:] = ReLU.(ψ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_steps[end]), 1E+1)
-            list_w.new[i].y[:] = ReLU.(ξ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_steps[end]), 1E+1)
+    # if isfailed
+    #     for i in failed_step:nw-1
+    #         list_w.new[i].s[:] = ReLU.(ψ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_steps[end]), 1E+1)
+    #         list_w.new[i].y[:] = ReLU.(ξ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_steps[end]), 1E+1)
     
-            list_w.new[i].u[:] = φ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_steps[end])
+    #         list_w.new[i].u[:] = φ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_steps[end])
     
-            list_w.new[i + 1].x[:] = f(list_w.new[i].x, list_w.new[i].u)
-        end
-    end
+    #         list_w.new[i + 1].x[:] = f(list_w.new[i].x, list_w.new[i].u)
+    #     end
+    # end
     println("isfailed: ", isfailed)
 end
 
@@ -534,10 +549,10 @@ function wrap_plot_graph(idx, list_w::array_w{T, S}, nw::S; check_nan=false) whe
     if check_nan
         plot_graph(
             idx, 
-            [isnan(list_w[i].x[j]) ? j : NaN for j in 1:list_w[1].nx, i in 1:nw],
-            [isnan(list_w[i].u[j]) ? j : NaN for j in 1:list_w[1].nu, i in 1:nw], 
-            [isnan(list_w[i].s[j]) ? j : NaN for j in 1:list_w[1].ns, i in 1:nw], 
-            [isnan(list_w[i].y[j]) ? j : NaN for j in 1:list_w[1].ns, i in 1:nw], 
+            [isnan(list_w[i].x[j]) ? j : isinf(list_w[i].x[j]) ? -j : NaN for j in 1:list_w[1].nx, i in 1:nw],
+            [isnan(list_w[i].u[j]) ? j : isinf(list_w[i].u[j]) ? -j : NaN for j in 1:list_w[1].nu, i in 1:nw], 
+            [isnan(list_w[i].s[j]) ? j : isinf(list_w[i].s[j]) ? -j : NaN for j in 1:list_w[1].ns, i in 1:nw], 
+            [isnan(list_w[i].y[j]) ? j : isinf(list_w[i].y[j]) ? -j : NaN for j in 1:list_w[1].ns, i in 1:nw], 
             [0.01 * i for i in 1:nw]
         )
     else
@@ -593,24 +608,22 @@ function main()
     init_xu!(list_w, ([-10.0, 0.0, 0.0], [0.0, 0.0, 0.0]), ([0.0], [0.0]))
     init_μ!(μ, list_w, nw, ns)
 
-    loop!(3, nw, list_w, list_r, list_coeff, μ)
+    loop!(2, nw, list_w, list_r, list_coeff, μ)
 end
 
 
 function plot_graph(index, plot_x, plot_u, plot_s, plot_y, plot_t)
 
     plots_x = Plots.plot(
-        plot_t[:], 
-        [ plot_x[1, :] plot_x[2, :]], 
-        label=["rx" "ry" ],
-        xlabel = "t",
+        plot_x[1, :], 
+        plot_x[2, :], 
         st=:scatter,
     )
 
     plots_u = Plots.plot(
         plot_t, 
         [ plot_u[1, :] ], 
-        label="u",
+        ylabel = "u",
         xlabel = "t",
         st=:scatter
     )
@@ -618,6 +631,7 @@ function plot_graph(index, plot_x, plot_u, plot_s, plot_y, plot_t)
     plots_s = Plots.plot(
         plot_t, 
         [ plot_s[i, :] for i in 1:7], 
+        ylabel = "s",
         xlabel = "t",
         st=:scatter
     )
@@ -625,6 +639,7 @@ function plot_graph(index, plot_x, plot_u, plot_s, plot_y, plot_t)
     plots_y = Plots.plot(
         plot_t, 
         [ plot_y[i, :] for i in 1:7], 
+        ylabel = "y",
         xlabel = "t",
         st=:scatter
     )
