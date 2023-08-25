@@ -346,8 +346,15 @@ end
 ψ(x, w::tuple_w, coeff::struct_coefficients, param::T) where T = w.s + param*coeff.η + coeff.θ*(x - w.x)
 ξ(x, w::tuple_w, coeff::struct_coefficients, param::T) where T = w.y + param*coeff.χ + coeff.ζ*(x - w.x)
 
-ReLU(x, a::T) where T = 0.5*(x + log(exp(a*x) + exp(-a*x))/a)
-
+ReLU(x, a::T) where T<:Real = begin
+    if x < -10/a 
+        1E-9
+    elseif x > 10/a
+        x
+    else
+        0.5*(x + log(exp(a*x) + exp(-a*x))/a)
+    end
+end
 function compute_coeff!(coeff::struct_coefficients, w::tuple_w, r::tuple_r, Q::struct_Q, μ::Vector{T}) where T<:Real
     _S::Matrix{T} = diagm(w.s)
     Y::Matrix{T} = diagm(w.y)
@@ -401,7 +408,7 @@ function compute_coeff!(coeff::struct_coefficients, w::tuple_w, r::tuple_r, Q::s
     # println("r.rd = ", r.rd)
     # println("r.rhat = ", r.rhat)
 
-    println("w.s = ", w.s)
+    # println("w.s = ", w.s)
     # println("w.y = ", w.y)
     # println("μ = ", μ)
 
@@ -496,16 +503,19 @@ function FFP!(nw::S, list_w::array_w{T, S}, list_coeff::Array{struct_coefficient
             break
         end
     end
-    # if isfailed
-    #     for i in failed_step:nw-1
-    #         list_w.new[i].s[:] = ReLU.(ψ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_steps[end]), 1E+1)
-    #         list_w.new[i].y[:] = ReLU.(ξ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_steps[end]), 1E+1)
+    if isfailed
+        # for i in failed_step:failed_step
+        for i in failed_step:nw-1
+            println("step : ", i, " ", param_steps[end], " ", list_w.new[i].x - list_w.old[i].x, " ", ψ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_steps[end]))
+            list_w.new[i].s[:] = ReLU.(ψ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_steps[end]), 1E+1)
+            println("s : ", list_w.new[i].s)
+            list_w.new[i].y[:] = ReLU.(ξ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_steps[end]), 1E+1)
     
-    #         list_w.new[i].u[:] = φ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_steps[end])
+            list_w.new[i].u[:] = φ(list_w.new[i].x, list_w.old[i], list_coeff[i], param_steps[end])
     
-    #         list_w.new[i + 1].x[:] = f(list_w.new[i].x, list_w.new[i].u)
-    #     end
-    # end
+            list_w.new[i + 1].x[:] = f(list_w.new[i].x, list_w.new[i].u)
+        end
+    end
     println("isfailed: ", isfailed)
 end
 
@@ -608,7 +618,7 @@ function main()
     init_xu!(list_w, ([-10.0, 0.0, 0.0], [0.0, 0.0, 0.0]), ([0.0], [0.0]))
     init_μ!(μ, list_w, nw, ns)
 
-    loop!(2, nw, list_w, list_r, list_coeff, μ)
+    loop!(100, nw, list_w, list_r, list_coeff, μ)
 end
 
 
