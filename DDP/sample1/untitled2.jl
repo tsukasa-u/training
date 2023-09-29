@@ -21,7 +21,7 @@ fuu(x::Vector{Real}, u::Vector{Real}) = ForwardDiff.jacobian(u -> ForwardDiff.ja
 l(x, u, c) = begin
     r, v_r, v_t = x
     u_rp, u_rm, u_tp, u_tm = u
-    return u_rp + u_rm + u_tp + u_tm + (u_rp*u_rm + u_tp*u_tm) + sum((x .- c).^2.0)
+    return 0.001*(u_rp + u_rm + u_tp + u_tm + (u_rp*u_rm + u_tp*u_tm))
 end
 lx(x::Vector{Real}, u::Vector{Real}, c) = ForwardDiff.gradient(x -> l(x, u, c), x,)
 lu(x::Vector{Real}, u::Vector{Real}, c) = ForwardDiff.gradient(u -> l(x, u, c), u)
@@ -151,6 +151,7 @@ function BFP(n, x, u, dt)
         Quu_1 = inverse_Quu(Quu)
         k = compute_k(Quu_1, Qu)
         K = compute_K(Quu_1, Qux)
+        # println(k, K)
 
         push!(list_k, k)
         push!(list_K, K)

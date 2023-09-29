@@ -46,7 +46,7 @@ fuu(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.jacobian(u -> Forwar
 l(x, u) = begin
     rx, ry = x
     ux, uy = u
-    return ux^2 + uy^2
+    return (ux^2 + uy^2)*0
 end
 lx(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.gradient(x -> l(x, u), x)
 lu(x::Vector{T}, u::Vector{T}) where T<:Real = ForwardDiff.gradient(u -> l(x, u), u)
@@ -404,13 +404,13 @@ function compute_coeff!(coeff::struct_coefficients, w::tuple_w, r::tuple_r, Q::s
     coeff.ζ[:, :] .= -Q.Qsx - Q.Qsu*coeff.β
 #---------------------------------------------------
 
-    P = [Q.Quu transpose(Q.Qsu) zero_us; Q.Qsu zero_ss I; zero_su Y _S]
-    println(size(P))
-    println(size(Q.Qu), " : ", size(Q.Qxu), " : ", size(Q.Qsx), " : ", size(zero_sx), " : ", size(r.rp), " : ", size(r.rd))
-    R = [transpose(Q.Qu) Q.Qxu; r.rp transpose(Q.Qsx); r.rd transpose(zero_sx)]
-    C = [coff.α coff.β; coff.η coff.θ; coff.χ coff.ζ]
+    # P = [Q.Quu transpose(Q.Qsu) zero_us; Q.Qsu zero_ss I; zero_su Y _S]
+    # println(size(P))
+    # println(size(Q.Qu), " : ", size(Q.Qxu), " : ", size(Q.Qsx), " : ", size(zero_sx), " : ", size(r.rp), " : ", size(r.rd))
+    # R = [transpose(Q.Qu) Q.Qxu; r.rp transpose(Q.Qsx); r.rd transpose(zero_sx)]
+    # C = [coff.α coff.β; coff.η coff.θ; coff.χ coff.ζ]
 
-    println(P*C + R)
+    # println(P*C + R)
 
 end
 
@@ -556,7 +556,7 @@ function loop!(n::S, nw::S, list_w::array_w{T, S}, list_r::Array{tuple_r{T, S}, 
         vec2 = [[list_coeff[i].β[1]/tmp[i] for i in 1:nw], [list_coeff[i].β[2]/tmp[i] for i in 1:nw]]
         
         wrap_plot_graph(k, list_w, nw, vec1=vec1[:], vec2=vec2[:])
-        wrap_plot_graph(-k, list_w, nw, check_nan=true)
+        # wrap_plot_graph(-k, list_w, nw, check_nan=true)
     end
 end
 
@@ -618,7 +618,7 @@ function get_list_init(_nx::S, _nu::S, _ns::S, _nw::S, T::DataType) where {S <: 
 end
 
 function main()
-    nw::Int64 = 20
+    nw::Int64 = 50
     nx::Int64 = 2
     nu::Int64 = 2
     ns::Int64 = 9
@@ -628,7 +628,7 @@ function main()
     init_xu!(list_w, ([-10.0, 0.0], [0.0, 0.0]), ([0.0, 0.0], [0.0, 0.0]))
     init_μ!(μ, list_w, nw, ns)
 
-    loop!(10, nw, list_w, list_r, list_coeff, μ)
+    loop!(1000, nw, list_w, list_r, list_coeff, μ)
 end
 
 
@@ -697,8 +697,10 @@ function plot_graph(index, plot_x, plot_u, plot_s, plot_y, plot_t; vec1::Array{A
         # legend = false,
         # margin = 1Plots.cm,
     )
-    savefig(string(index, base = 10, pad = 2)*".svg")
+    frame(anim, plot_ref)
+    # savefig(string(index, base = 10, pad = 2)*".svg")
 end
 
-
+anim = Animation()
 @time @CPUtime main()
+gif(anim, "sin.gif", fps=10)
