@@ -1,4 +1,4 @@
-include("func.jl")
+# include("func.jl")
 # using .func
 
 
