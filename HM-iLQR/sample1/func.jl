@@ -23,6 +23,7 @@ module func
         lfxx::Function
 
         g::Array{Function, 1}
+        h::Array{Function, 1}
 
         a::RobotZoo.Cartpole{Float64}
         h::Float64
@@ -52,6 +53,7 @@ module func
             _new.lfxx = (x) -> ForwardDiff.hessian(dx->_new.lf(dx),x)
 
             _new.g = Function[]
+            _new.h = Function[(x) -> max(0, g(x...)) for g in _new.g]
 
             return _new
         end
@@ -140,7 +142,9 @@ module func
     export sumMarray, endMarray, getEndMarray, setEndMarray, getMarray, setMarray
 
     sumMarray(f::Function, a::Marray, b::Marray) = sum(f(a.a[i, :], b.a[i, :]) for i in 1:min(a.N, b.N))
+    sumMarray(f::Function, a::Marray...) = sum(f([ele.a[i, :] for ele in a]...) for i in 1:min([ele.N for ele in a]...))
     endMarray(f::Function, a::Marray) = f(a.a[a.N, :])
+    endMarray(f::Function, a::Marray...) = f([ele.a[ele.N, :] for ele in a]...)
     getMarray(a::Marray, b) = a.a[a.N, b...]
     getEndMarray(a::Marray) = a.a[a.N, a.n...]
     getEndMarray(a::Marray, k) = a.a[a.N, [a.n[i] for i in 1:length(a.n)-size(k)[1]]..., k...]
