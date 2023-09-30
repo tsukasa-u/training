@@ -170,7 +170,7 @@ module M_iLQR
 
             if (abs(ΔJ) < ϵ_v && norm(d, 2) < d_max) || idx == MaxIter
             # if idx == MaxIter
-                gif(anim, "anim_fps15.gif", fps = 15)
+                gif(anim, "M-iLQR_anim_fps15.gif", fps = 15)
                 return X, U, K
             end
 
