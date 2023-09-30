@@ -28,7 +28,7 @@ module func
         hu::Function
 
         a::RobotZoo.Cartpole{Float64}
-        h::Float64
+        _h::Float64
         M::Int64
         N::Int64
 
@@ -36,7 +36,7 @@ module func
             _new = new()
 
             _new.a = RobotZoo.Cartpole()
-            _new.h = 0.01
+            _new._h = 0.01
 
             _new.f = (x, u) -> dynamics_rk4(x,u,_new.a,_new.h)
             _new.fx = (x, u) -> ForwardDiff.jacobian(dx->_new.f(dx,u),x)
@@ -149,10 +149,15 @@ module func
 
     Base.copy(s::Marray) = Marray(s._L, s.M, s.N, s.n, s.a)
 
-    import Base.:+, Base.:-
-    +(a::Marray, b::Marray) = Marray(a._L, a.M, a.N, a.n, a.a + b.a)
-    -(a::Marray, b::Marray) = Marray(a._L, a.M, a.N, a.n, a.a - b.a)
+    # import Base.:+, Base.:-
+    Base.:+(a::Marray, b::Marray) = Marray(a._L, a.M, a.N, a.n, a.a + b.a)
+    Base.:-(a::Marray, b::Marray) = Marray(a._L, a.M, a.N, a.n, a.a - b.a)
 
+    Base.copyto!(a::Marray, b::Marray) = (a.a = copy(b.a))
+    Base.copyto!(a::Marray, b::Marray, i::Int64) = (a.a[a.L[i]+1:a.L[i+1]] = copy(b.a[b.L[i]+1:b.L[i+1]]))
+    Base.copyto!(a::Marray, b::Marray, i::Int64, j::Int64) = (a.a[a.L[i]+j] = copy(b.a[b.L[i]+j]))
+    Base.copyto!(a::Marray, b::Marray, i::Int64, j::Int64, k...) = (a.a[a.L[i]+j, k...] = copy(b.a[b.L[i]+j, k...]))
+    Base.copyto!(a::Marray, b::Array) = (a.a = copy(b))
 
     # Base.endof(a::Marray) = a.N
 
@@ -170,4 +175,21 @@ module func
     setEndMarray!(a::Marray, v, k) = (a.a[a.N, [a.n[i] for i in 1:length(a.n)-size(k)[1]]..., k...] = v)
 
     getMarray(a::Marray) = a.a
+
+    broadcast(f::Function, a::Marray...) = begin
+        idx = argmin([ele.N for ele in a])
+        n = size(f(a.a[idx, [1:n for n in 1:a[idx].n]]))
+        return Marray(a[idx]._L, a[idx].M, a[idx].N, n, [f(a.a[i, [1:n for n in 1:a.n]]) for i in 1:a[idx].N])
+    end
+
+    # norm(a::Marray) = Marray(a._L, a.M, a.N, [], norm.(a.a, 2))
+
+    # max(a::Marray) = begin
+    #     idx = argmin([ele.N for ele in a])
+    #     Marray(a[idx]._L, a[idx].M, a[idx].N, a[idx].n, maximum(a.a, dims=1))
+    # end
+
+    onesMarray(_L, M, N, n) = Marray(_L, M, N, n, ones(N, n...))
+    zerosMarray(_L, M, N, n) = Marray(_L, M, N, n, zeros(N, n...))
+    similar(a::Marray) = Marray(a._L, a.M, a.N, a.n, similar(a.a))
 end
