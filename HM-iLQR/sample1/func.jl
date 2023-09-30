@@ -22,8 +22,10 @@ module func
         lfx::Function
         lfxx::Function
 
-        g::Array{Function, 1}
-        h::Array{Function, 1}
+        g::Function
+        h::Function
+        hx::Function
+        hu::Function
 
         a::RobotZoo.Cartpole{Float64}
         h::Float64
@@ -52,8 +54,11 @@ module func
             _new.lfx = (x) -> ForwardDiff.gradient(dx->_new.lf(dx),x)
             _new.lfxx = (x) -> ForwardDiff.hessian(dx->_new.lf(dx),x)
 
-            _new.g = Function[]
-            _new.h = Function[(x) -> max(0, g(x...)) for g in _new.g]
+            _new.g = (x, u) -> @assert false "g is not defined"
+            _new.h = (x, u) -> max.(0.0, _new.g(x, u))
+            _new.hx = (x, u) -> ForwardDiff.gradient(dx->_new.h(dx,u),x)
+            _new.hu = (x, u) -> ForwardDiff.gradient(du->_new.h(x,du),u)
+            
 
             return _new
         end
@@ -109,6 +114,9 @@ module func
             return NaN64
         end
     end
+    Base.getindex(a::Marray, _::Colon, _::Colon) = begin
+        return a.a[:]
+    end
     Base.getindex(a::Marray, i::Int64, j::Int64, k...) = begin
         idx = a.L[i]+j
         if idx <= a.N
@@ -117,17 +125,26 @@ module func
             return NaN64
         end
     end
+    Base.getindex(a::Marray, _::Colon, _::Colon, k...) = begin
+        return a.a[:, k...]
+    end
     Base.setindex!(a::Marray, v, i::Int64, j::Int64) = begin
         idx = a.L[i]+j
         if idx <= a.N
             a.a[idx] = v
         end
     end
+    Base.setindex!(a::Marray, v, _::Colon, _::Colon) = begin
+        return a.a[:] = v
+    end
     Base.setindex!(a::Marray, v, i::Int64, j::Int64, k...) = begin
         idx = a.L[i]+j
         if idx <= a.N
             a.a[a.L[i]+j, k...] = v
         end
+    end
+    Base.setindex!(a::Marray, v, _::Colon, _::Colon, k...) = begin
+        return a.a[:, k...] = v
     end
 
     Base.copy(s::Marray) = Marray(s._L, s.M, s.N, s.n, s.a)
