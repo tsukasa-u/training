@@ -164,7 +164,8 @@ module M_iLQR
 
             frame(
                 anim, 
-                plot(Main.func.getMarray(X)[:, 1], Main.func.getMarray(X)[:, 2], label="$(idx) : ΔJ = $(_J)")
+                plot(X[:, :, 1], X[:, :, 2], label="$(idx) : ΔJ = $(_J)")
+                # plot(Main.func.getMarray(X)[:, 1], Main.func.getMarray(X)[:, 2], label="$(idx) : ΔJ = $(_J)")
                 # plot(range(start = 0.0, step = 0.01, length = U._L), Main.func.getMarray(U)[:, 1], label="$(idx) : ΔJ = $(_J)")
             )
 
