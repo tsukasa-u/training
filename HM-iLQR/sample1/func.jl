@@ -1,3 +1,5 @@
+# export func
+
 module func
     using RobotZoo
     using RobotDynamics
@@ -38,7 +40,7 @@ module func
             _new.a = RobotZoo.Cartpole()
             _new._h = 0.01
 
-            _new.f = (x, u) -> dynamics_rk4(x,u,_new.a,_new.h)
+            _new.f = (x, u) -> dynamics_rk4(x,u,_new.a,_new._h)
             _new.fx = (x, u) -> ForwardDiff.jacobian(dx->_new.f(dx,u),x)
             _new.fu = (x, u) -> ForwardDiff.jacobian(du->_new.f(x,du),u)
 
@@ -79,7 +81,7 @@ module func
         N::Int64
         L::Vector{Int64}
         _L::Int64
-        n::Vector{Int64}
+        n::Tuple{Vararg{Int64}}
         a::Array{Float64}
         function Marray(_L, M, N, n)
             _new = new()
@@ -176,7 +178,7 @@ module func
 
     getMarray(a::Marray) = a.a
 
-    broadcast(f::Function, a::Marray...) = begin
+    Base.broadcast(f::Function, a::Marray...) = begin
         idx = argmin([ele.N for ele in a])
         n = size(f(a.a[idx, [1:n for n in 1:a[idx].n]]))
         return Marray(a[idx]._L, a[idx].M, a[idx].N, n, [f(a.a[i, [1:n for n in 1:a.n]]) for i in 1:a[idx].N])
