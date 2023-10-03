@@ -107,7 +107,7 @@ module ALM_iLQR
 
     M_iLQR.wrapRunM_iLQR(X_init, U_init, μ, λ, N, M, MaxIter, ϵ_v, d_max, funcs) = RunM_iLQR(X_init, U_init, μ, λ, N, M, MaxIter, ϵ_v, d_max, funcs)
 
-    function update_λ!(λ, μ, X, U, funcs, φ)
+    function update_λ_μ!(λ, μ, X, U, funcs, φ)
         @assert φ > 1.0 "φ must be greater than 1.0" 
         println(λ.n)
         if λ.n[1] > 0
@@ -126,12 +126,12 @@ module ALM_iLQR
         λ, μ, φ, ϵ_g = init(X_init._L, X_init.M, X_init.N, size(funcs.g(X_init[1, 1, :], U_init[1, 1, :])))
         
         X, U, K = M_iLQR.wrapRunM_iLQR(X_init, U_init, μ, λ, N, M, MaxIter, ϵ_v, d_max, funcs)
-        update_λ!(λ, μ, X, U, funcs, φ)
+        update_λ_μ!(λ, μ, X, U, funcs, φ)
 
         if λ.n[1] > 0
             while max(norm.(funcs.g.(X, U), 2)[:, :]) > ϵ_g
                 X, U, K = M_iLQR.wrapRunM_iLQR(X_init, U_init, μ, λ, N, M, MaxIter, ϵ_v, d_max, funcs)
-                update_λ!(λ, μ, X, U, funcs, φ)
+                update_λ_μ!(λ, μ, X, U, funcs, φ)
             end
         end
 
