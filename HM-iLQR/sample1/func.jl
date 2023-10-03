@@ -178,10 +178,18 @@ module func
 
     getMarray(a::Marray) = a.a
 
-    Base.broadcast(f::Function, a::Marray...) = begin
+    # Base.broadcast(f::Function, a::Marray...) = begin
+    #     idx = argmin([ele.N for ele in a])
+    #     n = size(f(a.a[idx, [1:n for n in 1:a[idx].n]]))
+    #     return Marray(a[idx]._L, a[idx].M, a[idx].N, n, [f(a.a[i, [1:n for n in 1:a.n]]) for i in 1:a[idx].N])
+    # end
+
+    Base.Broadcast.broadcasted(f, a::Marray...) = begin
         idx = argmin([ele.N for ele in a])
-        n = size(f(a.a[idx, [1:n for n in 1:a[idx].n]]))
-        return Marray(a[idx]._L, a[idx].M, a[idx].N, n, [f(a.a[i, [1:n for n in 1:a.n]]) for i in 1:a[idx].N])
+        _f = f([ele.a[1, [1:n for n in ele.n]...] for ele in a]...)
+        @assert !isempty(_f) "can not broadcast"
+        n = size(_f)
+        return Marray(a[idx]._L, a[idx].M, a[idx].N, n, [f([ele.a[i, [1:n for n in ele.n]...] for ele in a]...) for i in 1:a[idx].N])
     end
 
     # norm(a::Marray) = Marray(a._L, a.M, a.N, [], norm.(a.a, 2))
@@ -190,6 +198,10 @@ module func
     #     idx = argmin([ele.N for ele in a])
     #     Marray(a[idx]._L, a[idx].M, a[idx].N, a[idx].n, maximum(a.a, dims=1))
     # end
+
+    # size(a::Marray) = (a.N, a.n...)
+
+    export onesMarray, zerosMarray, similar
 
     onesMarray(_L, M, N, n) = Marray(_L, M, N, n, ones(N, n...))
     zerosMarray(_L, M, N, n) = Marray(_L, M, N, n, zeros(N, n...))
