@@ -29,6 +29,9 @@ module func
         hx::Function
         hu::Function
 
+        B::Function
+        β::Function
+
         a::RobotZoo.Cartpole{Float64}
         _h::Float64
         M::Int64
@@ -61,6 +64,20 @@ module func
             _new.hx = (x, u) -> ForwardDiff.jacobian(dx->_new.h(dx,u),x)
             _new.hu = (x, u) -> ForwardDiff.jacobian(du->_new.h(x,du),u)
             
+            _new.B = (x, u, ψ, δ) -> begin
+                @assert ψ > 0 "ϕ must be positive"
+                g = _new.g(x, u)
+                if δ<=-g
+                    return -ψ*log.(-g)
+                else
+                    return ψ*_new.β.(-g, δ)
+                end
+            end
+
+            _new.β = (g, δ) -> begin
+                @assert δ > 0 "δ must be positive"
+                return 0.5*(((g-2*δ)/δ)^2 - 1) - log(δ)
+            end
 
             return _new
         end
@@ -206,4 +223,5 @@ module func
     onesMarray(_L, M, N, n) = Marray(_L, M, N, n, ones(N, n...))
     zerosMarray(_L, M, N, n) = Marray(_L, M, N, n, zeros(N, n...))
     similar(a::Marray) = Marray(a._L, a.M, a.N, a.n, similar(a.a))
+
 end
