@@ -58,8 +58,8 @@ module func
 
             _new.g = (x, u) -> @assert false "g is not defined"
             _new.h = (x, u) -> max.(0.0, _new.g(x, u))
-            _new.hx = (x, u) -> ForwardDiff.gradient(dx->_new.h(dx,u),x)
-            _new.hu = (x, u) -> ForwardDiff.gradient(du->_new.h(x,du),u)
+            _new.hx = (x, u) -> ForwardDiff.jacobian(dx->_new.h(dx,u),x)
+            _new.hu = (x, u) -> ForwardDiff.jacobian(du->_new.h(x,du),u)
             
 
             return _new
