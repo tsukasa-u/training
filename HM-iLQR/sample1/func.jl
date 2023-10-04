@@ -224,4 +224,8 @@ module func
     zerosMarray(_L, M, N, n) = Marray(_L, M, N, n, zeros(N, n...))
     similar(a::Marray) = Marray(a._L, a.M, a.N, a.n, similar(a.a))
 
+    export isemptyMarray
+
+    isemptyMarray(a::Marray) = isempty(a.a)
+
 end
