@@ -2,7 +2,7 @@ include("M-iLQR.jl")
 include("func.jl")
 using .func
 
-module ALM_iLQR
+module RLBM_iLQR
     using LinearAlgebra
     using Plots
     using Main.M_iLQR
@@ -11,16 +11,16 @@ module ALM_iLQR
 
     function compute_J2(X, U, ψ, δ, funcs)
         a = (X, U) -> begin
-            funcs.B(X, U, ψ, δ)
+            sum(funcs.B(X, U, ψ, δ))
         end
         return M_iLQR.compute_J(X, U, funcs) + Main.func.sumMarray(a, X, U) + Main.func.endMarray(a, X, U)
     end
 
     M_iLQR.wrapCompute_J(X, U, ψ, δ, funcs) = compute_J2(X, U, ψ, δ, funcs)
 
-    function backwardPass!(X, U, Vx, Vxx, d, funcs)
+    function backwardPass!(X, U, K, Vx, Vxx, d, funcs)
         k = Main.func.Marray(X._L, X.M, X.N, (U.n[1],))
-        K = Main.func.Marray(X._L, X.M, X.N, (U.n[1], X.n[1]))
+        # K = Main.func.Marray(X._L, X.M, X.N, (U.n[1], X.n[1]))
         ΔV = Main.func.Marray(X._L, X.M, X.N, ())
         for i in U.M:-1:1
             for j in U._L:-1:1
@@ -41,9 +41,9 @@ module ALM_iLQR
         return k, K, ΔV
     end
 
-    M_iLQR.wrapbackwardPass!(X, U, Vx, Vxx, d, funcs) = backwardPass!(X, U, Vx, Vxx, d, funcs)
+    M_iLQR.wrapbackwardPass!(X, U, K, Vx, Vxx, d, funcs) = backwardPass!(X, U, K, Vx, Vxx, d, funcs)
 
-    function RunM_iLQR(X_init, U_init, N, M, MaxIter, ϵ_v, d_max, funcs)
+    function RunM_iLQR(X_init, U_init, K, ψ, δ, N, M, MaxIter, ϵ_v, d_max, funcs)
         
         _J, J_, L = M_iLQR.init(N, M)
 
@@ -60,7 +60,7 @@ module ALM_iLQR
         for idx in 1:MaxIter
             println("start step ", idx, ", J = ", _J)
             M_iLQR.updateV!(X, Vx, Vxx, funcs)
-            k, K, ΔV = M_iLQR.wrapbackwardPass!(X, U, Vx, Vxx, d, funcs)
+            k, K, ΔV = M_iLQR.wrapbackwardPass!(X, U, K, Vx, Vxx, d, funcs)
 
             X, U = M_iLQR.forwardPass(X, U, k, K, d, funcs)
 
@@ -78,7 +78,7 @@ module ALM_iLQR
 
             if (abs(ΔJ) < ϵ_v && norm(d, 2) < d_max) || idx == MaxIter
             # if idx == MaxIter
-                gif(anim, "ALM-iLQR_anim_fps15.gif", fps = 15)
+                gif(anim, "RLBM-iLQR_anim_fps15.gif", fps = 15)
                 return X, U, K
             end
 
@@ -87,7 +87,7 @@ module ALM_iLQR
         return X, U, K
     end
 
-    M_iLQR.wrapRunM_iLQR(X_init, U_init, N, M, MaxIter, ϵ_v, d_max, funcs) = RunM_iLQR(X_init, U_init, N, M, MaxIter, ϵ_v, d_max, funcs)
+    M_iLQR.wrapRunM_iLQR(X_init, U_init, K_init, ψ, δ, N, M, MaxIter, ϵ_v, d_max, funcs) = RunM_iLQR(X_init, U_init, K_init, ψ, δ, N, M, MaxIter, ϵ_v, d_max, funcs)
 
     function update_ψ_δ!(ψ, δ, ω₁, ω₂, δ_min)
         @assert ψ > 0 "ψ must be positive"
@@ -102,17 +102,17 @@ module ALM_iLQR
         return 1.0, 0.01, 0.5, 0.5, 1.0, 1E-6
     end
 
-    function RunBLBM_iLQR(X_init, U_init, N, M, MaxIter, ϵ_v, d_max, funcs)
+    function RunRLBM_iLQR(X_init, U_init, K_init, N, M, MaxIter, ϵ_v, d_max, funcs)
 
         δ, δ_min, ω_1, ω_2, ψ, ϵ_g = init()
         
-        X, U, K = M_iLQR.wrapRunM_iLQR(X_init, U_init, N, M, MaxIter, ϵ_v, d_max, funcs)
+        X, U, K = M_iLQR.wrapRunM_iLQR(X_init, U_init, K_init, ψ, δ, N, M, MaxIter, ϵ_v, d_max, funcs)
         update_ψ_δ!(ψ, δ, ω_1, ω_2, δ_min)
 
         n = size(funcs.g(X[1, 1, :], U[1, 1, :]))
         if n[1] > 0
-            while max(norm.(funcs.g.(X, U), 2)[:, :]) > ϵ_g
-                X, U, K = M_iLQR.wrapRunM_iLQR(X_init, U_init, N, M, MaxIter, ϵ_v, d_max, funcs)
+            while max(norm.(funcs.g.(X, U))[:, :]...) > ϵ_g
+                X, U, K = M_iLQR.wrapRunM_iLQR(X_init, U_init, K_init, ψ, δ, N, M, MaxIter, ϵ_v, d_max, funcs)
                 update_ψ_δ!(ψ, δ, ω_1, ω_2, δ_min)
             end
         end
@@ -152,7 +152,7 @@ end
 #     X_init = func.Marray(L, M, N+1, (n,))
 #     U_init = func.Marray(L, M, N, (m,), 0.001*ones(N,m))
 
-#     X, U, K = ALM_iLQR.RunALM_iLQR(X_init, U_init, N, M, MaxIter, ϵ_v, d_max, funcs)
+#     X, U, K = RLBM_iLQR.RunALM_iLQR(X_init, U_init, N, M, MaxIter, ϵ_v, d_max, funcs)
 
 # end
 
