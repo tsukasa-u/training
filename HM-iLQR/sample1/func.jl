@@ -28,6 +28,11 @@ module func
         h::Function
         hx::Function
         hu::Function
+        
+        gf::Function
+        hf::Function
+        hfx::Function
+        hfu::Function
 
         B::Function
         β::Function
@@ -59,19 +64,27 @@ module func
             _new.lfx = (x) -> ForwardDiff.gradient(dx->_new.lf(dx),x)
             _new.lfxx = (x) -> ForwardDiff.hessian(dx->_new.lf(dx),x)
 
-            _new.g = (x, u) -> @assert false "g is not defined"
+            _new.g = (x, u) -> [0.0]
             _new.h = (x, u) -> max.(0.0, _new.g(x, u))
             _new.hx = (x, u) -> ForwardDiff.jacobian(dx->_new.h(dx,u),x)
             _new.hu = (x, u) -> ForwardDiff.jacobian(du->_new.h(x,du),u)
-            
+
+            _new.gf = (x) -> [0.0]
+            _new.hf = (x) -> max.(0.0, _new.gf(x))
+            _new.hfx = (x) -> ForwardDiff.jacobian(dx->_new.hf(dx),x)
+
             _new.B = (x, u, ψ, δ) -> begin
                 @assert ψ > 0 "ϕ must be positive"
-                g = _new.g(x, u)
-                if δ<=-g
-                    return -ψ*log.(-g)
-                else
-                    return ψ*_new.β.(-g, δ)
-                end
+                # g = _new.g(x, u)
+                # if δ<=-g
+                #     return -ψ*log.(-g)
+                # else
+                #     return ψ*_new.β.(-g, δ)
+                # end
+                return [
+                    δ<=-g ? -ψ*log.(-g) : ψ*_new.β.(-g, δ)
+                    for g in _new.g(x, u)
+                ]
             end
 
             _new.β = (g, δ) -> begin
@@ -112,7 +125,7 @@ module func
             return _new
         end
         
-        function Marray(_L, M, N, n, a)
+        function Marray(_L, M, N, n, _a)
             _new = new()
             _new.M = M
             _new.N = N
@@ -120,7 +133,7 @@ module func
             _new.n = n
             _new.L = [(_L-1)*(i-1) for i in 1:M+1]
             _new.L[M+1] = N
-            _new.a = copy(a)
+            _new.a = copy(_a)
             return _new
         end
     end
@@ -171,6 +184,10 @@ module func
     # import Base.:+, Base.:-
     Base.:+(a::Marray, b::Marray) = Marray(a._L, a.M, a.N, a.n, a.a + b.a)
     Base.:-(a::Marray, b::Marray) = Marray(a._L, a.M, a.N, a.n, a.a - b.a)
+    Base.:*(a::Marray, b::T) where T <: Number = Marray(a._L, a.M, a.N, a.n, a.a*b)
+    Base.:*(a::T, b::Marray) where T <: Number = Marray(b._L, b.M, b.N, b.n, a*b.a)
+    Base.:*(a::Marray, b::Vector{T}) where T <: Number = Marray(a._L, a.M, a.N, a.n, a.a.*b)
+    Base.:*(a::Vector{T}, b::Marray) where T <: Number = Marray(b._L, b.M, b.N, b.n, a.*b.a)
 
     Base.copyto!(a::Marray, b::Marray) = (a.a = copy(b.a))
     Base.copyto!(a::Marray, b::Marray, i::Int64) = (a.a[a.L[i]+1:a.L[i+1]] = copy(b.a[b.L[i]+1:b.L[i+1]]))
@@ -182,10 +199,10 @@ module func
 
     export sumMarray, endMarray, getEndMarray, setEndMarray, getMarray, setMarray
 
-    sumMarray(f::Function, a::Marray, b::Marray) = sum(f(a.a[i, :], b.a[i, :]) for i in 1:min(a.N, b.N))
-    sumMarray(f::Function, a::Marray...) = sum(f([ele.a[i, :] for ele in a]...) for i in 1:min([ele.N for ele in a]...))
-    endMarray(f::Function, a::Marray) = f(a.a[a.N, :])
-    endMarray(f::Function, a::Marray...) = f([ele.a[ele.N, :] for ele in a]...)
+    sumMarray(f::Function, a::Marray, b::Marray) = sum(f(a.a[i, [1:n for n in a.n]...], b.a[i, [1:n for n in b.n]...]) for i in 1:min(a.N, b.N))
+    sumMarray(f::Function, a::Marray...) = sum(f([ele.a[i, [1:n for n in ele.n]...] for ele in a]...) for i in 1:min([ele.N for ele in a]...))
+    endMarray(f::Function, a::Marray) = f(a.a[a.N, [1:n for n in a.n]...])
+    endMarray(f::Function, a::Marray...) = f([ele.a[ele.N, [1:n for n in ele.n]...] for ele in a]...)
     getMarray(a::Marray, b) = a.a[a.N, b...]
     getEndMarray(a::Marray) = a.a[a.N, a.n...]
     getEndMarray(a::Marray, k) = a.a[a.N, [a.n[i] for i in 1:length(a.n)-size(k)[1]]..., k...]
@@ -206,7 +223,12 @@ module func
         _f = f([ele.a[1, [1:n for n in ele.n]...] for ele in a]...)
         @assert !isempty(_f) "can not broadcast"
         n = size(_f)
-        return Marray(a[idx]._L, a[idx].M, a[idx].N, n, [f([ele.a[i, [1:n for n in ele.n]...] for ele in a]...) for i in 1:a[idx].N])
+        _tmp = [f([ele.a[i, [1:n for n in ele.n]...] for ele in a]...) for i in 1:a[idx].N]
+        _f_n = size(_f)
+        len_f_n = length(_f_n)
+        tuple_swap = tuple([[len_f_n+1]; [i for i in 1:len_f_n]]...)
+        permutedims(cat(_tmp..., dims=1+len_f_n), tuple_swap)
+        return Marray(a[idx]._L, a[idx].M, a[idx].N, n, permutedims(cat(_tmp..., dims=1+len_f_n), tuple_swap))
     end
 
     # norm(a::Marray) = Marray(a._L, a.M, a.N, [], norm.(a.a, 2))
