@@ -1,11 +1,9 @@
-include("M-iLQR.jl")
-include("func.jl")
-using .func
 
 module ALM_iLQR
     using LinearAlgebra
     using Plots
-    using Main.M_iLQR
+    include("M-iLQR.jl")
+    using .M_iLQR
     include("func.jl")
     using .func
 
@@ -139,40 +137,3 @@ module ALM_iLQR
         return X, U, K
     end
 end
-
-# using RobotZoo
-# using RobotDynamics
-# using LinearAlgebra
-# using Plots
-
-# function main()
-#     model = RobotZoo.Cartpole()
-#     n,m = RobotDynamics.dims(model)
-
-#     funcs = func.FUNC()
-#     funcs.a = model
-#     funcs._h = 0.05
-
-#     Q = Diagonal([1.0*ones(2); 1.0*ones(2)])
-#     R = 0.1*ones(1, 1)
-#     Qn = Array(100.0*I(n))
-#     xgoal = [0, pi, 0, 0]
-#     funcs.l = (x, u) -> 0.5*((x-xgoal)'*Q*(x-xgoal) + u'*R*u)
-#     funcs.lf = (x) -> 0.5*((x-xgoal)'*Qn*(x-xgoal))
-#     funcs.g = (x, u) -> []
-
-#     N = 100
-#     M = 1
-#     MaxIter = 1000
-#     ϵ_v = 1e-6
-#     d_max = 1e-6
-    
-#     _, _, L = M_iLQR.init(N, M)
-#     X_init = func.Marray(L, M, N+1, (n,))
-#     U_init = func.Marray(L, M, N, (m,), 0.001*ones(N,m))
-
-#     X, U, K = ALM_iLQR.RunALM_iLQR(X_init, U_init, N, M, MaxIter, ϵ_v, d_max, funcs)
-
-# end
-
-# main()
