@@ -1,11 +1,9 @@
-include("M-iLQR.jl")
-include("func.jl")
-using .func
 
 module RLBM_iLQR
     using LinearAlgebra
     using Plots
-    using Main.M_iLQR
+    include("M-iLQR.jl")
+    using .M_iLQR
     include("func.jl")
     using .func
 
