@@ -24,12 +24,14 @@ module func
         lfx::Function
         lfxx::Function
 
-        g::Function
+        gl::Function
+        ge::Function
         h::Function
         hx::Function
         hu::Function
         
-        gf::Function
+        glf::Function
+        gef::Function
         hf::Function
         hfx::Function
         hfu::Function
@@ -64,13 +66,17 @@ module func
             _new.lfx = (x) -> ForwardDiff.gradient(dx->_new.lf(dx),x)
             _new.lfxx = (x) -> ForwardDiff.hessian(dx->_new.lf(dx),x)
 
-            _new.g = (x, u) -> [0.0]
-            _new.h = (x, u) -> max.(0.0, _new.g(x, u))
+            # _new.g = (x, u) -> [0.0]
+            _new.ge = (x, u) -> [0.0]
+            _new.gl = (x, u) -> [0.0]
+            _new.h = (x, u) -> [max.(0.0, _new.gl(x, u)); _new.ge(x, u)] 
             _new.hx = (x, u) -> ForwardDiff.jacobian(dx->_new.h(dx,u),x)
             _new.hu = (x, u) -> ForwardDiff.jacobian(du->_new.h(x,du),u)
 
-            _new.gf = (x) -> [0.0]
-            _new.hf = (x) -> max.(0.0, _new.gf(x))
+            # _new.gf = (x) -> [0.0]
+            _new.gef = (x) -> [0.0]
+            _new.glf = (x) -> [0.0]
+            _new.hf = (x) -> [max.(0.0, _new.glf(x)); _new.gef(x)]
             _new.hfx = (x) -> ForwardDiff.jacobian(dx->_new.hf(dx),x)
 
             _new.B = (x, u, ψ, δ) -> begin
@@ -82,8 +88,8 @@ module func
                 #     return ψ*_new.β.(-g, δ)
                 # end
                 return [
-                    δ<=-g ? -ψ*log.(-g) : ψ*_new.β.(-g, δ)
-                    for g in _new.g(x, u)
+                    [ δ<=-g ? -ψ*log.(-g) : ψ*_new.β.(-g, δ) for g in _new.gl(x, u) ];
+                    [ (g^2)/ψ  for g in _new.ge(x, u) ]
                 ]
             end
 
