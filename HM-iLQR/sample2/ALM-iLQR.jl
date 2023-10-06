@@ -10,8 +10,6 @@ module ALM_iLQR
     using .func
 
     function compute_J1(X, U, μ, μf, λ, λf, funcs)
-        # return Main.func.sumMarray(a, X, U, λ, μ, h) + Main.func.endMarray(a, X, λ, μ, h)
-        # println(λ.n)
         if λ.n[1] == 0
             return M_iLQR.compute_J(X, U, funcs)
         else
@@ -28,10 +26,6 @@ module ALM_iLQR
     end
 
     M_iLQR.wrapCompute_J(X, U, μ, μf, λ, λf, funcs) = compute_J1(X, U, μ, μf, λ, λf, funcs)
-
-    # function compute_h(M, L, funcs)
-    #     return [max(0, g(X[i, j, :], U[i, j, :])) for i in 1:M, j in 1:L, g in funcs.g]
-    # end
 
     function backwardPass!(X, U, λ, μ, Vx, Vxx, d, funcs)
         k = Main.func.Marray(X._L, X.M, X.N, (U.n[1],))
@@ -113,19 +107,11 @@ module ALM_iLQR
     M_iLQR.wrapRunM_iLQR(X_init, U_init, μ, μf, λ, λf, N, M, MaxIter, ϵ_v, d_max, funcs) = RunM_iLQR(X_init, U_init, μ, μf, λ, λf, N, M, MaxIter, ϵ_v, d_max, funcs)
 
     function update_λ_μ!(λ, λf, μ, μf, X, U, funcs, φ)
-        @assert φ > 1.0 "φ must be greater than 1.0" 
-        # println(λ.n)
+        @assert φ > 1.0 "φ must be greater than 1.0"
         if λ.n[1] > 0
-            # println(funcs.g.(X, U))
-            # println(λ + μ*funcs.g.(X, U))
-            # println(max.(0, λ + μ*funcs.g.(X, U)))
-            # a = (λ, μ, X, U) -> max.(0, λ + μ*funcs.g(X, U))
-            # copyto!(λ, max.(0, λ + μ[:, :]*funcs.g.(X, U)))
-            λ = ((λ, μ, X, U) -> max.(0, λ + μ*funcs.g(X, U))).(λ, μ, X, U)
-            λf = max.(0, λf + μf*Main.func.endMarray(funcs.gf, X))
+            λ = ((λ, μ, X, U) -> max.(0, λ + μ*[funcs.gl(X, U); funcs.ge(X, U)])).(λ, μ, X, U)
+            λf = max.(0, λf + μf*[Main.func.endMarray(funcs.glf, X); Main.func.endMarray(funcs.gef, X)])
             
-            # println(φ*μ)
-            # copyto!(μ, φ*μ)
             μ = φ*μ
             μf = φ*μf
         end
@@ -137,17 +123,18 @@ module ALM_iLQR
 
     function RunALM_iLQR(X_init, U_init, N, M, MaxIter, ϵ_v, d_max, funcs)
 
-        λ, λf, μ, μf, φ, ϵ_g = init(U_init._L, U_init.M, U_init.N, size(funcs.g(X_init[1, 1, :], U_init[1, 1, :])), size(funcs.gf(X_init[1, 1, :])))
+        λ, λf, μ, μf, φ, ϵ_g = init(U_init._L, U_init.M, U_init.N, size(funcs.h(X_init[1, 1, :], U_init[1, 1, :])), size(funcs.hf(X_init[1, 1, :])))
         
         X, U, K = M_iLQR.wrapRunM_iLQR(X_init, U_init, μ, μf, λ, λf, N, M, MaxIter, ϵ_v, d_max, funcs)
         update_λ_μ!(λ, λf, μ, μf, X, U, funcs, φ)
 
-        if λ.n[1] > 0
-            while max(norm.(funcs.g.(X, U))[:, :]...) > ϵ_g
+        # if λ.n[1] > 0
+            while M_iLQR.compute_max_g(X, U, funcs) > ϵ_g
+            # while max(norm.(funcs.g.(X, U))[:, :]...) > ϵ_g
                 X, U, K = M_iLQR.wrapRunM_iLQR(X_init, U_init, μ, μf, λ, λf, N, M, MaxIter, ϵ_v, d_max, funcs)
                 update_λ_μ!(λ, λf, μ, μf, X, U, funcs, φ)
             end
-        end
+        # end
 
         return X, U, K
     end
