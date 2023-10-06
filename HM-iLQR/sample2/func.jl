@@ -1,5 +1,3 @@
-# export func
-
 module func
     using RobotZoo
     using RobotDynamics
