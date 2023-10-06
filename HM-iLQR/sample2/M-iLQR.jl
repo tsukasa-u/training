@@ -1,12 +1,8 @@
 
-# include("func.jl")
-
-# export M_iLQR
-
 module M_iLQR
-    include("func.jl")
     using LinearAlgebra
     using Plots
+    include("func.jl")
     using .func
 
     function init(N, M)
