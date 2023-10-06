@@ -109,13 +109,14 @@ module RLBM_iLQR
         X, U, K = M_iLQR.wrapRunM_iLQR(X_init, U_init, K_init, ψ, δ, N, M, MaxIter, ϵ_v, d_max, funcs)
         update_ψ_δ!(ψ, δ, ω_1, ω_2, δ_min)
 
-        n = size(funcs.g(X[1, 1, :], U[1, 1, :]))
-        if n[1] > 0
-            while max(norm.(funcs.g.(X, U))[:, :]...) > ϵ_g
+        # n = size(funcs.g(X[1, 1, :], U[1, 1, :]))
+        # if n[1] > 0
+            while M_iLQR.compute_max_g(X, U, funcs) > ϵ_g
+            # while max(norm.(funcs.g.(X, U))[:, :]...) > ϵ_g
                 X, U, K = M_iLQR.wrapRunM_iLQR(X_init, U_init, K_init, ψ, δ, N, M, MaxIter, ϵ_v, d_max, funcs)
                 update_ψ_δ!(ψ, δ, ω_1, ω_2, δ_min)
             end
-        end
+        # end
 
         return X, U, K
     end
