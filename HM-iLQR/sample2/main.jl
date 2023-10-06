@@ -1,4 +1,3 @@
-include("HM-iLQR.jl")
 
 
 using RobotZoo
@@ -6,7 +5,12 @@ using RobotDynamics
 using LinearAlgebra
 using Plots
 
+
+# include("HM-iLQR.jl")
+# using .HM_iLQR
+
 function main()
+
     model = RobotZoo.Cartpole()
     n,m = RobotDynamics.dims(model)
 
