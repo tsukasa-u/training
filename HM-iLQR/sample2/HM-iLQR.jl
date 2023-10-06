@@ -37,7 +37,8 @@ function main()
     xgoal = [0, pi, 0, 0]
     funcs.l = (x, u) -> 0.5*((x-xgoal)'*Q*(x-xgoal) + u'*R*u)
     funcs.lf = (x) -> 0.5*((x-xgoal)'*Qn*(x-xgoal))
-    funcs.g = (x, u) -> [0.0]
+    funcs.ge = (x, u) -> [0.0]
+    funcs.gl = (x, u) -> [0.0]
 
     N = 100
     M = 1
