@@ -31,9 +31,12 @@ module RLBM_iLQR
                 
                 k[i, j, :] = -Quu \ Qu
                 K[i, j, :, :] = -Quu \ Qux
+                # k[i, j, :] = -Quu*Qu/(Quu'*Quu)[1, 1]
+                # K[i, j, :, :] = -Quu*Qux/(Quu'*Quu)[1, 1]
+
                 ΔV[i, j] = 0.5 * Qu' * k[i, j, :]
-                Vx[i, j, :] = Qx + vec(Qu' * K[i, j, :, :])
-                Vxx[i, j, :, :] = Qxx + Qux' * K[i, j, :, :]
+                Vx[i, j, :] = Qx + vec(Qu * Quu \ Qux)
+                Vxx[i, j, :, :] = Qxx + Qux' * Quu \ Qux
             end
         end
         return k, K, ΔV

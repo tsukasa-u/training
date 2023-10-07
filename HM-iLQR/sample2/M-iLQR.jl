@@ -18,6 +18,9 @@ module M_iLQR
                 X[i, j+1, :] = funcs.f(X[i, j, :], U_init[i, j, :])
             end
         end
+        
+        plot(X[:, :, 1], label="0")
+        png("M-iLQR_init.png")
         return X, U
     end
 

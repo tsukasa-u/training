@@ -48,6 +48,9 @@ module ALM_iLQR
                 
                 k[i, j, :] = -Quu \ Qu
                 K[i, j, :, :] = -Quu \ Qux
+                # k[i, j, :] = -Quu*Qu/(Quu'*Quu)[1, 1]
+                # K[i, j, :, :] = -Quu*Qux/(Quu'*Quu)[1, 1]
+
                 ΔV[i, j] = 0.5 * Qu' * k[i, j, :]
                 Vx[i, j, :] = Qx + vec(Qu' * K[i, j, :, :])
                 Vxx[i, j, :, :] = Qxx + Qux' * K[i, j, :, :]
@@ -86,9 +89,9 @@ module ALM_iLQR
 
             frame(
                 anim, 
-                plot(X[:, :, 1], X[:, :, 2], label="$(idx) : ΔJ = $(_J)")
+                # plot(X[:, :, 1], X[:, :, 2], label="$(idx) : ΔJ = $(_J)")
                 # plot(Main.func.getMarray(X)[:, 1], Main.func.getMarray(X)[:, 2], label="$(idx) : ΔJ = $(_J)")
-                # plot(range(start = 0.0, step = 0.01, length = U._L), Main.func.getMarray(U)[:, 1], label="$(idx) : ΔJ = $(_J)")
+                plot(U[:, :, 1], label="$(idx) : ΔJ = $(_J)")
             )
 
             if (abs(ΔJ) < ϵ_v && norm(d, 2) < d_max) || idx == MaxIter
