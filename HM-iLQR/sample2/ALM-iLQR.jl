@@ -108,6 +108,7 @@ module ALM_iLQR
         @assert φ > 1.0 "φ must be greater than 1.0"
         if λ.n[1] > 0
             λ = ((λ, μ, X, U) -> max.(0, λ + μ*[funcs.gl(X, U); funcs.ge(X, U)])).(λ, μ, X, U)
+            
             λf = max.(0, λf + μf*[Main.func.endMarray(funcs.glf, X); Main.func.endMarray(funcs.gef, X)])
             
             μ = φ*μ
