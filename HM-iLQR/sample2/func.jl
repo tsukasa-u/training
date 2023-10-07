@@ -1,9 +1,10 @@
 module func
     using RobotZoo
     using RobotDynamics
+    using RobotDynamics: ContinuousDynamics
     using ForwardDiff
 
-    export FUNC
+    # export FUNC
 
     mutable struct FUNC
 
@@ -37,7 +38,6 @@ module func
         B::Function
         β::Function
 
-        a::RobotZoo.Cartpole{Float64}
         _h::Float64
         M::Int64
         N::Int64
@@ -45,10 +45,9 @@ module func
         function FUNC()
             _new = new()
 
-            _new.a = RobotZoo.Cartpole()
             _new._h = 0.01
 
-            _new.f = (x, u) -> dynamics_rk4(x,u,_new.a,_new._h)
+            _new.f = (x, u) -> @assert false "f is not defined"
             _new.fx = (x, u) -> ForwardDiff.jacobian(dx->_new.f(dx,u),x)
             _new.fu = (x, u) -> ForwardDiff.jacobian(du->_new.f(x,du),u)
 
@@ -64,14 +63,12 @@ module func
             _new.lfx = (x) -> ForwardDiff.gradient(dx->_new.lf(dx),x)
             _new.lfxx = (x) -> ForwardDiff.hessian(dx->_new.lf(dx),x)
 
-            # _new.g = (x, u) -> [0.0]
             _new.ge = (x, u) -> [0.0]
             _new.gl = (x, u) -> [0.0]
             _new.h = (x, u) -> [max.(0.0, _new.gl(x, u)); _new.ge(x, u)] 
             _new.hx = (x, u) -> ForwardDiff.jacobian(dx->_new.h(dx,u),x)
             _new.hu = (x, u) -> ForwardDiff.jacobian(du->_new.h(x,du),u)
 
-            # _new.gf = (x) -> [0.0]
             _new.gef = (x) -> [0.0]
             _new.glf = (x) -> [0.0]
             _new.hf = (x) -> [max.(0.0, _new.glf(x)); _new.gef(x)]
@@ -79,12 +76,6 @@ module func
 
             _new.B = (x, u, ψ, δ) -> begin
                 @assert ψ > 0 "ϕ must be positive"
-                # g = _new.g(x, u)
-                # if δ<=-g
-                #     return -ψ*log.(-g)
-                # else
-                #     return ψ*_new.β.(-g, δ)
-                # end
                 return [
                     [ δ<=-g ? -ψ*log.(-g) : ψ*_new.β.(-g, δ) for g in _new.gl(x, u) ];
                     [ (g^2)/ψ  for g in _new.ge(x, u) ]
@@ -101,12 +92,21 @@ module func
 
     end
 
-    function dynamics_rk4(x,u,a,h)
+    # function dynamics_rk4(x,u,a<:ContinuousDynamics,h)
+    #     #RK4 integration with zero-order hold on u
+    #     f1 = RobotZoo.dynamics(a, x, u)
+    #     f2 = RobotZoo.dynamics(a, x + 0.5*h*f1, u)
+    #     f3 = RobotZoo.dynamics(a, x + 0.5*h*f2, u)
+    #     f4 = RobotZoo.dynamics(a, x + h*f3, u)
+    #     return x + (h/6.0)*(f1 + 2.0*f2 + 2.0*f3 + f4)
+    # end
+ 
+    function dynamics_rk4(x,u,f::Function,h)
         #RK4 integration with zero-order hold on u
-        f1 = RobotZoo.dynamics(a, x, u)
-        f2 = RobotZoo.dynamics(a, x + 0.5*h*f1, u)
-        f3 = RobotZoo.dynamics(a, x + 0.5*h*f2, u)
-        f4 = RobotZoo.dynamics(a, x + h*f3, u)
+        f1 = f(x, u)
+        f2 = f(x + 0.5*h*f1, u)
+        f3 = f(x + 0.5*h*f2, u)
+        f4 = f(x + h*f3, u)
         return x + (h/6.0)*(f1 + 2.0*f2 + 2.0*f3 + f4)
     end
 
