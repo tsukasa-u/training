@@ -46,10 +46,11 @@ module ALM_iLQR
                     Qux += μ[i, j]*funcs.hu(X[i, j, :], U[i, j, :])'*funcs.hx(X[i, j, :], U[i, j, :])    
                 end
                 
-                k[i, j, :] = -Quu \ Qu
-                K[i, j, :, :] = -Quu \ Qux
-                # k[i, j, :] = -Quu*Qu/(Quu'*Quu)[1, 1]
-                # K[i, j, :, :] = -Quu*Qux/(Quu'*Quu)[1, 1]
+                # k[i, j, :] = -Quu \ Qu
+                # K[i, j, :, :] = -Quu \ Qux
+                α = 0.3
+                k[i, j, :] = -(Quu'*Quu + α*I(U.n[1]))\(Quu'*Qu)
+                K[i, j, :, :] = -(Quu'*Quu + α*I(U.n[1]))\(Quu'*Qux)
 
                 ΔV[i, j] = 0.5 * Qu' * k[i, j, :]
                 Vx[i, j, :] = Qx + vec(Qu' * K[i, j, :, :])
@@ -96,7 +97,7 @@ module ALM_iLQR
 
             if (abs(ΔJ) < ϵ_v && norm(d, 2) < d_max) || idx == MaxIter
             # if idx == MaxIter
-                gif(anim, "ALM-iLQR_anim_fps15.gif", fps = 15)
+                gif(anim, "ALM-iLQR_anim_fps1.gif", fps = 1)
                 return X, U, K
             end
 
@@ -131,6 +132,7 @@ module ALM_iLQR
         update_λ_μ!(λ, λf, μ, μf, X, U, funcs, φ)
 
         # if λ.n[1] > 0
+        println("max_g = ", M_iLQR.compute_max_g(X, U, funcs))
             while M_iLQR.compute_max_g(X, U, funcs) > ϵ_g
             # while max(norm.(funcs.g.(X, U))[:, :]...) > ϵ_g
                 X, U, K = M_iLQR.wrapRunM_iLQR(X_init, U_init, μ, μf, λ, λf, N, M, MaxIter, ϵ_v, d_max, funcs)
