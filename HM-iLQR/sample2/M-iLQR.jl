@@ -90,7 +90,7 @@ module M_iLQR
 
     function compute_max_g(X, U, funcs)
         # return max(norm.(funcs.gl.(X, U))[:, :]...)
-        return max(norm.(funcs.h.(X, U))[:, :]...) + max(norm.(funcs.hf.(X))[:, :]...)
+        return max(max(norm.(funcs.h.(X, U))[:, :]...), max(norm.(funcs.hf.(X))[:, :]...))
     end
 
     function RunM_iLQR(X_init, U_init, N, M, MaxIter, ϵ_v, d_max, funcs)

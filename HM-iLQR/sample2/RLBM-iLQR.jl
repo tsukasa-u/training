@@ -29,10 +29,11 @@ module RLBM_iLQR
                 Quu = funcs.luu(X[i, j, :], U[i, j, :]) + funcs.fu(X[i, j, :], U[i, j, :])' * Vxx[i, j+1, :, :] * funcs.fu(X[i, j, :], U[i, j, :])
                 Qux = funcs.lux(X[i, j, :], U[i, j, :]) + funcs.fu(X[i, j, :], U[i, j, :])' * Vxx[i, j+1, :, :] * funcs.fx(X[i, j, :], U[i, j, :])
                 
-                k[i, j, :] = -Quu \ Qu
-                K[i, j, :, :] = -Quu \ Qux
-                # k[i, j, :] = -Quu*Qu/(Quu'*Quu)[1, 1]
-                # K[i, j, :, :] = -Quu*Qux/(Quu'*Quu)[1, 1]
+                # k[i, j, :] = -Quu \ Qu
+                # K[i, j, :, :] = -Quu \ Qux
+                α = 0.3
+                k[i, j, :] = -(Quu'*Quu + α*I(U.n[1]))\(Quu'*Qu)
+                K[i, j, :, :] = -(Quu'*Quu + α*I(U.n[1]))\(Quu'*Qux)
 
                 ΔV[i, j] = 0.5 * Qu' * k[i, j, :]
                 Vx[i, j, :] = Qx + vec(Qu * Quu \ Qux)
