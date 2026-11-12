@@ -140,14 +140,14 @@ module ALM_iLQR
             
             d = M_iLQR.conpute_d(X, U, funcs)
 
-            plot_X = plot(X[:, :, 1], label="1 $(idx) : ΔJ = $(_J)")
-            plot!(plot_X, X[:, :, 2], label="2")
-            plot!(plot_X, X[:, :, 3], label="3")
+            plot_X = plot(X[:, :, 2], label="1 $(idx) : ΔJ = $(_J)")
+            # plot!(plot_X, X[:, :, 2], label="2")
+            # plot!(plot_X, X[:, :, 3], label="3")
 
             plot_U = plot(U[:, :, 1]-U[:, :, 2], label="1-2")
             plot!(plot_U, U[:, :, 3]-U[:, :, 4], label="3-4")
-            plot!(plot_U, U[:, :, 1]+U[:, :, 2], label="1+2")
-            plot!(plot_U, U[:, :, 3]+U[:, :, 4], label="3+4")
+            # plot!(plot_U, U[:, :, 1]+U[:, :, 2], label="1+2")
+            # plot!(plot_U, U[:, :, 3]+U[:, :, 4], label="3+4")
 
             plot_Z = plot(U[:, :, 1], label="1")
             plot!(plot_Z, U[:, :, 2], label="2")

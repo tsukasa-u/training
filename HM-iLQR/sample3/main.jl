@@ -67,13 +67,13 @@ function main()
 
     N = 100
     M = 1
-    MaxIter = 1000
+    MaxIter = 200
     ϵ_v = 1e-6
     d_max = 1e-6
     
     _, _, L = M_iLQR.init(N, M)
     X_init = func.Marray(L, M, N+1, (n,), [ele for _ in 1:N+1, ele in [1.0, 0.0, 1.0]])
-    X_init.limit_lower = (0.0, 0.0, 0.0)
+    X_init.limit_lower = (0.0, -Inf64, -Inf64)
     X_init.limit_upper = (Inf64, Inf64, Inf64)
     U_init = func.Marray(L, M, N, (m,), 0.0*ones(N,m))
     U_init.limit_lower = (0.0, 0.0, 0.0, 0.0)

@@ -51,11 +51,10 @@ function main()
     funcs.ge = (x, u) -> begin
         r, v_r, v_θ = x
         u_r_p, u_r_m, u_θ_p, u_θ_m = u
-        # return [
-        #     u_r_p - u_r_m > 0.0 ? u_r_m : u_r_p,
-        #     u_θ_p - u_θ_m > 0.0 ? u_θ_m : u_θ_p,
-        # ]
-        return [0.0]
+        return [
+            u_r_p - u_r_m > 0.0 ? u_r_m : u_r_p,
+            u_θ_p - u_θ_m > 0.0 ? u_θ_m : u_θ_p,
+        ]
         # return [ u_r_p^2*u_r_m^2, u_θ_p^2*u_θ_m^2]
     end
     funcs.gef = (x) -> [0.0]

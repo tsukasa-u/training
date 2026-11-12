@@ -57,7 +57,7 @@ module M_iLQR
 
     wrapbackwardPass!(X, U, Vx, Vxx, d, funcs) = backwardPass!(X, U, Vx, Vxx, d, funcs)
 
-    function forwardPass(_X, _U, k, K, d, funcs, α::Float64)
+    function forwardPass(_X, _U, k, K, d, funcs, α)
     # function forwardPass(_X, _U, k, K, d, funcs, α, _dx)
         X = copy(_X)
         U = copy(_U)
